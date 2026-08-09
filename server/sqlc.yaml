@@ -1,0 +1,15 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "internal/modules/reco/internal/migrations"
+    queries: "internal/modules/reco/internal/repository/queries"
+    gen:
+      go:
+        package: "gen"
+        out: "internal/modules/reco/internal/repository/gen"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "vector"
+            go_type:
+              import: "github.com/pgvector/pgvector-go"
+              type: "Vector"
