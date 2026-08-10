@@ -13,3 +13,12 @@ sql:
             go_type:
               import: "github.com/pgvector/pgvector-go"
               type: "Vector"
+
+  - engine: "postgresql"
+    schema: "internal/modules/user/internal/migrations"
+    queries: "internal/modules/user/internal/repository/queries"
+    gen:
+      go:
+        package: "gen"
+        out: "internal/modules/user/internal/repository/gen"
+        sql_package: "pgx/v5"
