@@ -1,6 +1,7 @@
 package user
 
 import (
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/contracts"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/internal/delivery/http"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/internal/repository"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/internal/service"
@@ -15,9 +16,14 @@ func RegisterUserRoutes(e *echo.Echo, handler *http.UserHandler) {
 	g.GET("/me", handler.GetMe)
 }
 
+func ProvideUserContract(s service.UserService) contracts.UserContract {
+	return s
+}
+
 var Module = fx.Options(
 	fx.Provide(repository.NewUserRepository),
 	fx.Provide(service.NewUserService),
+	fx.Provide(ProvideUserContract),
 	fx.Provide(http.NewUserHandler),
 	fx.Invoke(RegisterUserRoutes),
 )
