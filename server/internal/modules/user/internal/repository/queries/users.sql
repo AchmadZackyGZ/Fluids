@@ -14,7 +14,7 @@ SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
 FROM users
 WHERE email = $1 LIMIT 1;
 
---- name: GetUserByID :one
+-- name: GetUserByID :one
 SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
 from users
 where id = $1 LIMIT 1;
