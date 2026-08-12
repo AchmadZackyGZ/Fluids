@@ -7,7 +7,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
 
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/auth"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/reco"
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/database"
 )
 
@@ -34,8 +36,10 @@ func main() {
 		// 2. Provide Echo HTTP Server Instance
 		fx.Provide(NewEchoServer),
 
-		// 3. Register Modul Recommendation (Uber FX Module)
+		// 3. Register Modul-Modul Aplikasi
 		reco.Module,
+		user.Module,
+		auth.Module,
 
 		// 4. Lifecycle Hook: Menyalakan & Mematikan Server secara Graceful
 		fx.Invoke(func(lc fx.Lifecycle, e *echo.Echo) {
