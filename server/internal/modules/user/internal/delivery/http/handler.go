@@ -21,7 +21,7 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 	}
 
-	user, err := h.svc.GetProfileByID(c.Request().Context(), userID)
+	user, err := h.svc.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "user not found"})
 	}

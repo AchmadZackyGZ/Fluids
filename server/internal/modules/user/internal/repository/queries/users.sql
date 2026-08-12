@@ -10,7 +10,7 @@ INSERT INTO users (
 RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at;
 
 -- name: GetUserByEmail :one
-SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
+SELECT id, username, email, password_hash, full_name, bio, avatar_url, created_at, updated_at
 FROM users
 WHERE email = $1 LIMIT 1;
 

@@ -11,7 +11,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg gen.CreateUserParams) (gen.CreateUserRow, error)
-	GetUserByEmail(ctx context.Context, email string) (gen.GetUserByEmailRow, error)
+	GetUserByEmail(ctx context.Context, email string) (gen.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (gen.GetUserByIDRow, error)
 	GetUserByUsername(ctx context.Context, username string) (gen.GetUserByUsernameRow, error)
 }
@@ -30,7 +30,7 @@ func (r *postgresRepository) CreateUser(ctx context.Context, arg gen.CreateUserP
 	return r.q.CreateUser(ctx, arg)
 }
 
-func (r *postgresRepository) GetUserByEmail(ctx context.Context, email string) (gen.GetUserByEmailRow, error) {
+func (r *postgresRepository) GetUserByEmail(ctx context.Context, email string) (gen.User, error) {
 	return r.q.GetUserByEmail(ctx, email)
 }
 
