@@ -3,9 +3,11 @@ import { AuthPage } from '../features/auth/pages/AuthPage';
 import { RocketLoadingScreen } from '../features/auth/components/RocketLoadingScreen';
 import { OnboardingModal } from '../features/auth/components/OnboardingModal';
 import { DashboardPage } from '../features/feed/pages/DashboardPage';
+import { ProfilePage } from '../features/profile/pages/ProfilePage';
+import { NetworkPage } from '../features/network/pages/NetworkPage';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard'>('auth');
+  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network'>('auth');
   const [isInitializing, setIsInitializing] = useState(true);
 
   const [user, setUser] = useState<{
@@ -93,6 +95,35 @@ export const App: React.FC = () => {
     setView('dashboard');
   };
 
+  // Triggered when user updates profile in Edit Profile Modal
+  const handleUpdateProfile = (updatedData: { fullName: string; username: string; bio: string; avatarUrl: string }) => {
+    setUser((prev) => ({
+      ...prev,
+      fullName: updatedData.fullName,
+      username: updatedData.username,
+      bio: updatedData.bio,
+      avatarUrl: updatedData.avatarUrl,
+    }));
+
+    // Sync with backend API if token exists
+    const token = localStorage.getItem('fluids_token');
+    if (token) {
+      fetch('/api/v1/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          full_name: updatedData.fullName,
+          username: updatedData.username,
+          bio: updatedData.bio,
+          avatar_url: updatedData.avatarUrl,
+        }),
+      }).catch(() => {});
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('fluids_token');
     setWelcomeToast(undefined);
@@ -135,6 +166,26 @@ export const App: React.FC = () => {
         <DashboardPage
           user={user}
           welcomeToast={welcomeToast}
+          onNavigateToProfile={() => setView('profile')}
+          onNavigateToNetwork={() => setView('network')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'profile' && (
+        <ProfilePage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onUpdateProfile={handleUpdateProfile}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'network' && (
+        <NetworkPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToProfile={() => setView('profile')}
           onLogout={handleLogout}
         />
       )}
