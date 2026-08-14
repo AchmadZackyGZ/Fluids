@@ -3,7 +3,7 @@ import {
   LayoutDashboard,
   Network,
   MessageSquare,
-  BarChart3,
+  Compass,
   Settings,
   Plus,
   HelpCircle,
@@ -22,6 +22,8 @@ import {
   User,
   X,
 } from "lucide-react";
+import { StoryViewerModal, StoryItem } from "../components/StoryViewerModal";
+import { AddStoryModal } from "../components/AddStoryModal";
 
 interface DashboardPageProps {
   user: {
@@ -35,6 +37,7 @@ interface DashboardPageProps {
   welcomeToast?: string;
   onNavigateToProfile?: () => void;
   onNavigateToNetwork?: () => void;
+  onNavigateToExplore?: () => void;
   onLogout: () => void;
 }
 
@@ -43,12 +46,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   welcomeToast,
   onNavigateToProfile,
   onNavigateToNetwork,
+  onNavigateToExplore,
   onLogout,
 }) => {
   const [likesCount, setLikesCount] = useState(1240);
   const [isLiked, setIsLiked] = useState(false);
   const [postText, setPostText] = useState("");
   const [showToast, setShowToast] = useState(Boolean(welcomeToast));
+
+  const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
+  const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(null);
+
+  const sampleDashboardStories: Record<string, StoryItem[]> = {
+    '@live_x': [
+      {
+        id: 's-1',
+        userName: '@live_x',
+        userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+        mediaUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=800',
+        caption: 'Live streaming Skyrim Cybermod Node! 🚀',
+        timeAgo: '10m ago',
+      },
+    ],
+    '@glitch': [
+      {
+        id: 's-2',
+        userName: '@glitch',
+        userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+        mediaUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800',
+        caption: 'New shader matrix build complete.',
+        timeAgo: '1h ago',
+      },
+    ],
+    '@cipher': [
+      {
+        id: 's-3',
+        userName: '@cipher',
+        userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+        mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800',
+        caption: 'Late night coding vibes at FLUIDS.',
+        timeAgo: '3h ago',
+      },
+    ],
+  };
 
   useEffect(() => {
     if (welcomeToast) {
@@ -76,6 +116,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   return (
     <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body">
+      {/* Modal Add Story */}
+      {isAddStoryOpen && (
+        <AddStoryModal
+          user={user}
+          onClose={() => setIsAddStoryOpen(false)}
+          onAddStory={() => {}}
+        />
+      )}
+
+      {/* Modal Fullscreen Story Viewer */}
+      {activeStoryView && (
+        <StoryViewerModal
+          stories={activeStoryView}
+          onClose={() => setActiveStoryView(null)}
+        />
+      )}
+
       {/* Toast Notification Banner (Welcome Back - Auto Dismiss in 3.5s) */}
       {showToast && welcomeToast && (
         <div className="fixed top-5 right-5 z-50 p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 backdrop-blur-xl flex items-center gap-3 text-emerald-300 text-xs font-bold shadow-2xl transition-all duration-500 animate-bounce">
@@ -141,13 +198,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
             </a>
 
-            <a
-              href="#analytics"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToExplore}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
-              <BarChart3 className="w-5 h-5" />
-              <span>Analytics</span>
-            </a>
+              <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
+              <span>Explore</span>
+            </button>
 
             <a
               href="#settings"
@@ -157,12 +215,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <span>Settings</span>
             </a>
             
+            {/* Profile Navigation Button */}
             <button
               type="button"
               onClick={onNavigateToProfile}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
-              <User className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
+              <User className="w-5 h-5 text-gray-400 group-hover:text-[#00f0ff] transition-colors" />
               <span>Profile</span>
             </button>
           </nav>
@@ -205,11 +264,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* Stories / Node Bar */}
         <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-none">
           {/* Add Story Button */}
-          <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer">
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-dashed border-white/20 hover:border-[#00f0ff] flex items-center justify-center transition-all group">
+          <div 
+            onClick={() => setIsAddStoryOpen(true)}
+            className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-dashed border-white/20 group-hover:border-[#00f0ff] flex items-center justify-center transition-all group-hover:scale-105">
               <Plus className="w-6 h-6 text-gray-400 group-hover:text-[#00f0ff]" />
             </div>
-            <span className="text-[11px] text-gray-400 font-medium">
+            <span className="text-[11px] text-gray-400 group-hover:text-white font-medium">
               Add Node
             </span>
           </div>
@@ -234,9 +296,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           ].map((story, i) => (
             <div
               key={i}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer"
+              onClick={() => setActiveStoryView(sampleDashboardStories[story.name])}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
             >
-              <div className="relative p-0.5 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] shadow-[0_0_12px_rgba(0,240,255,0.3)]">
+              <div className="relative p-0.5 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] shadow-[0_0_12px_rgba(0,240,255,0.3)] group-hover:scale-105 transition-transform">
                 <img
                   src={story.img}
                   alt={story.name}
@@ -248,7 +311,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   </span>
                 )}
               </div>
-              <span className="text-[11px] text-gray-300 font-medium">
+              <span className="text-[11px] text-gray-300 group-hover:text-[#00f0ff] font-medium">
                 {story.name}
               </span>
             </div>

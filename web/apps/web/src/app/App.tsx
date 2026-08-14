@@ -5,9 +5,10 @@ import { OnboardingModal } from '../features/auth/components/OnboardingModal';
 import { DashboardPage } from '../features/feed/pages/DashboardPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { NetworkPage } from '../features/network/pages/NetworkPage';
+import { ExplorePage } from '../features/explore/pages/ExplorePage';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network'>('auth');
+  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore'>('auth');
   const [isInitializing, setIsInitializing] = useState(true);
 
   const [user, setUser] = useState<{
@@ -168,6 +169,7 @@ export const App: React.FC = () => {
           welcomeToast={welcomeToast}
           onNavigateToProfile={() => setView('profile')}
           onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
           onLogout={handleLogout}
         />
       )}
@@ -176,6 +178,8 @@ export const App: React.FC = () => {
         <ProfilePage
           user={user}
           onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
           onUpdateProfile={handleUpdateProfile}
           onLogout={handleLogout}
         />
@@ -185,6 +189,17 @@ export const App: React.FC = () => {
         <NetworkPage
           user={user}
           onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToProfile={() => setView('profile')}
+          onNavigateToExplore={() => setView('explore')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'explore' && (
+        <ExplorePage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
           onNavigateToProfile={() => setView('profile')}
           onLogout={handleLogout}
         />
