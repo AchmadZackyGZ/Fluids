@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  LayoutDashboard, Network, MessageSquare, BarChart3, Settings, 
+  LayoutDashboard, Network, MessageSquare, Compass, Settings, 
   User, Plus, LogOut, Search, Sparkles, UserCheck, UserPlus, 
   Hash, ShieldCheck, Cpu, ArrowUpRight, CheckCircle2, Filter
 } from 'lucide-react';
@@ -13,6 +13,7 @@ interface NetworkPageProps {
   };
   onNavigateToDashboard: () => void;
   onNavigateToProfile: () => void;
+  onNavigateToExplore?: () => void;
   onLogout: () => void;
 }
 
@@ -20,6 +21,7 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
   user,
   onNavigateToDashboard,
   onNavigateToProfile,
+  onNavigateToExplore,
   onLogout,
 }) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'ai' | 'neural' | 'sys'>('all');
@@ -157,13 +159,14 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
               <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
             </a>
 
-            <a
-              href="#analytics"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToExplore}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
-              <BarChart3 className="w-5 h-5" />
-              <span>Analytics</span>
-            </a>
+              <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
+              <span>Explore</span>
+            </button>
 
             <a
               href="#settings"
