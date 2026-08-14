@@ -6,9 +6,11 @@ import { DashboardPage } from '../features/feed/pages/DashboardPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { NetworkPage } from '../features/network/pages/NetworkPage';
 import { ExplorePage } from '../features/explore/pages/ExplorePage';
+import { MessagesPage } from '../features/messages/pages/MessagesPage';
+import { ReelsPage } from '../features/reels/pages/ReelsPage';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore'>('auth');
+  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore' | 'messages' | 'reels'>('auth');
   const [isInitializing, setIsInitializing] = useState(true);
 
   const [user, setUser] = useState<{
@@ -170,6 +172,8 @@ export const App: React.FC = () => {
           onNavigateToProfile={() => setView('profile')}
           onNavigateToNetwork={() => setView('network')}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
           onLogout={handleLogout}
         />
       )}
@@ -180,6 +184,8 @@ export const App: React.FC = () => {
           onNavigateToDashboard={() => setView('dashboard')}
           onNavigateToNetwork={() => setView('network')}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
           onUpdateProfile={handleUpdateProfile}
           onLogout={handleLogout}
         />
@@ -191,6 +197,8 @@ export const App: React.FC = () => {
           onNavigateToDashboard={() => setView('dashboard')}
           onNavigateToProfile={() => setView('profile')}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
           onLogout={handleLogout}
         />
       )}
@@ -200,6 +208,32 @@ export const App: React.FC = () => {
           user={user}
           onNavigateToDashboard={() => setView('dashboard')}
           onNavigateToNetwork={() => setView('network')}
+          onNavigateToProfile={() => setView('profile')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'messages' && (
+        <MessagesPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToProfile={() => setView('profile')}
+          onNavigateToReels={() => setView('reels')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'reels' && (
+        <ReelsPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
           onNavigateToProfile={() => setView('profile')}
           onLogout={handleLogout}
         />

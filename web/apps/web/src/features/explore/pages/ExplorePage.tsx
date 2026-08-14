@@ -14,6 +14,8 @@ interface ExplorePageProps {
   onNavigateToDashboard: () => void;
   onNavigateToNetwork: () => void;
   onNavigateToProfile: () => void;
+  onNavigateToMessages?: () => void;
+  onNavigateToReels?: () => void;
   onLogout: () => void;
 }
 
@@ -22,6 +24,8 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   onNavigateToDashboard,
   onNavigateToNetwork,
   onNavigateToProfile,
+  onNavigateToMessages,
+  onNavigateToReels,
   onLogout,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -152,16 +156,17 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
               <span>Network</span>
             </button>
 
-            <a
-              href="#messages"
-              className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToMessages}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
                 <span>Messages</span>
               </div>
               <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </a>
+            </button>
 
             {/* ACTIVE ITEM: EXPLORE (REPLACED ANALYTICS) */}
             <a
@@ -171,6 +176,15 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
               <Compass className="w-5 h-5 text-[#00f0ff]" />
               <span>Explore</span>
             </a>
+
+            <button
+              type="button"
+              onClick={onNavigateToReels}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
+            >
+              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
+              <span>Reels</span>
+            </button>
 
             <a
               href="#settings"
@@ -260,14 +274,12 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
           </div>
         </div>
 
-        {/* Explore Masonry Grid Layout (Persis Instagram Explore) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 pb-8">
+        {/* Explore Clean 3-Column Uniform Grid (Persis Instagram Explore) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 pb-8">
           {exploreGridItems.map((item) => (
             <div
               key={item.id}
-              className={`relative rounded-2xl overflow-hidden border border-white/10 group cursor-pointer ${
-                item.isLarge ? 'md:row-span-2 aspect-[3/4]' : 'aspect-square'
-              }`}
+              className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group cursor-pointer shadow-md bg-[#0d1017]"
             >
               {/* Media Image */}
               <img
@@ -278,7 +290,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
 
               {/* Reel Video Indicator Badge */}
               {item.type === 'reel' && (
-                <div className="absolute top-3 right-3 p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10">
+                <div className="absolute top-3 right-3 p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 shadow-md">
                   <Play className="w-3.5 h-3.5 fill-white text-white" />
                 </div>
               )}

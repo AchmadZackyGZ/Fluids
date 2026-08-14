@@ -4,6 +4,7 @@ import {
   Network,
   MessageSquare,
   Compass,
+  Film,
   Settings,
   Plus,
   HelpCircle,
@@ -38,6 +39,8 @@ interface DashboardPageProps {
   onNavigateToProfile?: () => void;
   onNavigateToNetwork?: () => void;
   onNavigateToExplore?: () => void;
+  onNavigateToMessages?: () => void;
+  onNavigateToReels?: () => void;
   onLogout: () => void;
 }
 
@@ -47,6 +50,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
   onNavigateToProfile,
   onNavigateToNetwork,
   onNavigateToExplore,
+  onNavigateToMessages,
+  onNavigateToReels,
   onLogout,
 }) => {
   const [likesCount, setLikesCount] = useState(1240);
@@ -56,6 +61,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(null);
+  const [viewedStories, setViewedStories] = useState<string[]>([]);
+
+  const handleOpenStory = (storyName: string, storyItems: StoryItem[]) => {
+    if (!viewedStories.includes(storyName)) {
+      setViewedStories((prev) => [...prev, storyName]);
+    }
+    setActiveStoryView(storyItems);
+  };
 
   const sampleDashboardStories: Record<string, StoryItem[]> = {
     '@live_x': [
@@ -187,16 +200,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <span>Network</span>
             </button>
 
-            <a
-              href="#messages"
-              className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToMessages}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
                 <span>Messages</span>
               </div>
               <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </a>
+            </button>
 
             <button
               type="button"
@@ -205,6 +219,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             >
               <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
               <span>Explore</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onNavigateToReels}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
+            >
+              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
+              <span>Reels</span>
             </button>
 
             <a
@@ -266,9 +289,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           {/* Add Story Button */}
           <div 
             onClick={() => setIsAddStoryOpen(true)}
-            className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+            className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
           >
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-dashed border-white/20 group-hover:border-[#00f0ff] flex items-center justify-center transition-all group-hover:scale-105">
+            <div className="w-16 h-16 rounded-full bg-white/5 border border-dashed border-white/20 group-hover:border-[#00f0ff] flex items-center justify-center transition-all group-hover:scale-105 shadow-md aspect-square">
               <Plus className="w-6 h-6 text-gray-400 group-hover:text-[#00f0ff]" />
             </div>
             <span className="text-[11px] text-gray-400 group-hover:text-white font-medium">
@@ -293,29 +316,39 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               isLive: false,
               img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
             },
-          ].map((story, i) => (
-            <div
-              key={i}
-              onClick={() => setActiveStoryView(sampleDashboardStories[story.name])}
-              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
-            >
-              <div className="relative p-0.5 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] shadow-[0_0_12px_rgba(0,240,255,0.3)] group-hover:scale-105 transition-transform">
-                <img
-                  src={story.img}
-                  alt={story.name}
-                  className="w-13 h-13 rounded-[14px] object-cover border border-black"
-                />
-                {story.isLive && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-red-600 text-[9px] font-extrabold text-white uppercase tracking-wider">
-                    LIVE
-                  </span>
-                )}
+          ].map((story, i) => {
+            const isViewed = viewedStories.includes(story.name);
+            return (
+              <div
+                key={i}
+                onClick={() => handleOpenStory(story.name, sampleDashboardStories[story.name])}
+                className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group"
+              >
+                <div
+                  className={`relative p-0.5 rounded-full transition-all group-hover:scale-105 ${
+                    isViewed
+                      ? 'bg-white/10 border border-white/20 opacity-60 shadow-none'
+                      : 'bg-gradient-to-tr from-[#9d00ff] via-[#00f0ff] to-[#9d00ff] shadow-[0_0_15px_rgba(157,0,255,0.4)]'
+                  }`}
+                >
+                  <img
+                    src={story.img}
+                    alt={story.name}
+                    className="w-15 h-15 rounded-full object-cover border-2 border-[#080a0f] aspect-square shrink-0"
+                    style={{ width: '60px', height: '60px' }}
+                  />
+                  {story.isLive && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded-full bg-red-600 text-[9px] font-extrabold text-white uppercase tracking-wider shadow-sm">
+                      LIVE
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[11px] font-medium transition-colors ${isViewed ? 'text-gray-500' : 'text-gray-300 group-hover:text-[#00f0ff]'}`}>
+                  {story.name}
+                </span>
               </div>
-              <span className="text-[11px] text-gray-300 group-hover:text-[#00f0ff] font-medium">
-                {story.name}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Post Composer Card */}

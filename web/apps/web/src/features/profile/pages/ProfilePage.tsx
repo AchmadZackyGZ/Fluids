@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
-import { 
-  LayoutDashboard, Network, MessageSquare, Compass, Settings, 
-  User, Plus, HelpCircle, LogOut, Edit3, Share2, Grid, Film, 
-  Bookmark, CheckCircle2 
-} from 'lucide-react';
-import { EditProfileModal } from '../components/EditProfileModal';
-import { StoryViewerModal, StoryItem } from '../../feed/components/StoryViewerModal';
-import { AddStoryModal } from '../../feed/components/AddStoryModal';
+import React, { useState } from "react";
+import {
+  LayoutDashboard,
+  Network,
+  MessageSquare,
+  Compass,
+  Settings,
+  User,
+  Plus,
+  HelpCircle,
+  LogOut,
+  Edit3,
+  Share2,
+  Grid,
+  Film,
+  Bookmark,
+  CheckCircle2,
+} from "lucide-react";
+import { EditProfileModal } from "../components/EditProfileModal";
+import {
+  StoryViewerModal,
+  StoryItem,
+} from "../../feed/components/StoryViewerModal";
+import { AddStoryModal } from "../../feed/components/AddStoryModal";
 
 interface ProfilePageProps {
   user: {
@@ -20,7 +35,14 @@ interface ProfilePageProps {
   onNavigateToDashboard: () => void;
   onNavigateToNetwork?: () => void;
   onNavigateToExplore?: () => void;
-  onUpdateProfile: (updatedData: { fullName: string; username: string; bio: string; avatarUrl: string }) => void;
+  onNavigateToMessages?: () => void;
+  onNavigateToReels?: () => void;
+  onUpdateProfile: (updatedData: {
+    fullName: string;
+    username: string;
+    bio: string;
+    avatarUrl: string;
+  }) => void;
   onLogout: () => void;
 }
 
@@ -29,79 +51,99 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onNavigateToDashboard,
   onNavigateToNetwork,
   onNavigateToExplore,
+  onNavigateToMessages,
+  onNavigateToReels,
   onUpdateProfile,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved'>('posts');
+  const [activeTab, setActiveTab] = useState<"posts" | "reels" | "saved">(
+    "posts",
+  );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
-  const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(null);
+  const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(
+    null,
+  );
 
-  const [userNote, setUserNote] = useState<string>('Catatan status...');
+  const [userNote, setUserNote] = useState<string>("Catatan status...");
 
-  const displayName = user.fullName || 'Achmad Zacky';
-  const username = user.username || 'achmadzacky';
-  const bio = user.bio || 'Lead Cybernetics Architect at FLUIDS. Crafting neural interfaces and high-fidelity augmented realities. Exploring the void between human cognition and synthetic consciousness.';
+  const displayName = user.fullName || "Achmad Zacky";
+  const username = user.username || "achmadzacky";
+  const bio =
+    user.bio ||
+    "Lead Cybernetics Architect at FLUIDS. Crafting neural interfaces and high-fidelity augmented realities. Exploring the void between human cognition and synthetic consciousness.";
   const initialLetter = displayName.charAt(0).toUpperCase();
 
   const storyHighlights = [
     {
-      id: 'hl-1',
-      title: 'CyberArt',
-      img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150',
+      id: "hl-1",
+      title: "CyberArt",
+      img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150",
       story: {
-        id: 's-hl-1',
+        id: "s-hl-1",
         userName: displayName,
-        userAvatar: user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        mediaUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800',
-        caption: 'CyberArt collection 2026 #CyberArt',
-        timeAgo: 'Highlights',
+        userAvatar:
+          user.avatarUrl ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        mediaUrl:
+          "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
+        caption: "CyberArt collection 2026 #CyberArt",
+        timeAgo: "Highlights",
       },
     },
     {
-      id: 'hl-2',
-      title: 'Projects',
-      img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150',
+      id: "hl-2",
+      title: "Projects",
+      img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150",
       story: {
-        id: 's-hl-2',
+        id: "s-hl-2",
         userName: displayName,
-        userAvatar: user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800',
-        caption: 'Neural Architecture UI Projects',
-        timeAgo: 'Highlights',
+        userAvatar:
+          user.avatarUrl ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        mediaUrl:
+          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800",
+        caption: "Neural Architecture UI Projects",
+        timeAgo: "Highlights",
       },
     },
     {
-      id: 'hl-3',
-      title: 'Setup 2026',
-      img: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150',
+      id: "hl-3",
+      title: "Setup 2026",
+      img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
       story: {
-        id: 's-hl-3',
+        id: "s-hl-3",
         userName: displayName,
-        userAvatar: user.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-        mediaUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800',
-        caption: 'Cyberpunk Battlestation Node',
-        timeAgo: 'Highlights',
+        userAvatar:
+          user.avatarUrl ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        mediaUrl:
+          "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800",
+        caption: "Cyberpunk Battlestation Node",
+        timeAgo: "Highlights",
       },
     },
   ];
 
   const samplePosts = [
-    'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?q=80&w=600&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop',
+    "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?q=80&w=600&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
   ];
 
-  const handleAddStory = (newStory: { mediaUrl: string; caption: string; note: string }) => {
+  const handleAddStory = (newStory: {
+    mediaUrl: string;
+    caption: string;
+    note: string;
+  }) => {
     if (newStory.note) setUserNote(newStory.note);
   };
 
   return (
     <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body">
-      
       {/* Modal Edit Profile */}
       {isEditModalOpen && (
         <EditProfileModal
@@ -167,16 +209,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
               <span>Network</span>
             </button>
 
-            <a
-              href="#messages"
-              className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToMessages}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5" />
+                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
                 <span>Messages</span>
               </div>
               <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </a>
+            </button>
 
             <button
               type="button"
@@ -185,6 +228,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             >
               <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
               <span>Explore</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onNavigateToReels}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
+            >
+              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
+              <span>Reels</span>
             </button>
 
             <a
@@ -232,19 +284,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       {/* 2. MAIN USER PROFILE CONTENT STREAM (Independent Scroll)         */}
       {/* ================================================================= */}
       <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
-        
         {/* Profile Banner & Info Header Card */}
         <div className="glass-panel rounded-3xl p-6 md:p-8 border border-white/10 relative overflow-hidden shadow-2xl">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            
             {/* Left Avatar & Name */}
             <div className="flex items-start gap-5">
-              
               {/* Avatar Image + Note Bubble ("Catatan...") */}
               <div className="relative flex-shrink-0 group">
-                
                 {/* Note Bubble Float (Catatan Instagram Style) */}
-                <div 
+                <div
                   onClick={() => setIsAddStoryOpen(true)}
                   className="absolute -top-7 left-1/2 -translate-x-1/2 px-3 py-1 rounded-xl bg-white/10 border border-[#00f0ff]/40 backdrop-blur-md text-[10px] text-white font-semibold whitespace-nowrap shadow-[0_0_12px_rgba(0,240,255,0.3)] cursor-pointer hover:scale-105 transition-transform animate-bounce"
                 >
@@ -259,7 +307,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                     className="w-24 h-24 rounded-2xl object-cover border-2 border-[#00f0ff] shadow-[0_0_25px_rgba(0,240,255,0.4)] cursor-pointer hover:opacity-90 transition-opacity"
                   />
                 ) : (
-                  <div 
+                  <div
                     onClick={() => setIsAddStoryOpen(true)}
                     className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_25px_rgba(0,240,255,0.4)] cursor-pointer hover:scale-105 transition-transform"
                   >
@@ -313,39 +361,56 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           {/* Profile Stats Metrics */}
           <div className="grid grid-cols-4 gap-4 text-center pt-6 mt-6 border-t border-white/5">
             <div>
-              <span className="block text-xl font-extrabold text-white">342</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Posts</span>
+              <span className="block text-xl font-extrabold text-white">
+                342
+              </span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                Posts
+              </span>
             </div>
 
             <div>
-              <span className="block text-xl font-extrabold text-white">14.2k</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Followers</span>
+              <span className="block text-xl font-extrabold text-white">
+                14.2k
+              </span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                Followers
+              </span>
             </div>
 
             <div>
-              <span className="block text-xl font-extrabold text-white">892</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Following</span>
+              <span className="block text-xl font-extrabold text-white">
+                892
+              </span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                Following
+              </span>
             </div>
 
             <div>
-              <span className="block text-xl font-extrabold text-[#00f0ff]">98%</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Vector Sync</span>
+              <span className="block text-xl font-extrabold text-[#00f0ff]">
+                98%
+              </span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                Vector Sync
+              </span>
             </div>
           </div>
         </div>
 
         {/* STORY HIGHLIGHTS BAR (Persis Instagram Desktop Story Highlights) */}
         <div className="flex items-center gap-6 overflow-x-auto pb-2 scrollbar-none">
-          
           {/* Add New Highlight Button (+ Baru) */}
-          <div 
+          <div
             onClick={() => setIsAddStoryOpen(true)}
             className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
           >
             <div className="w-16 h-16 rounded-2xl bg-white/5 border border-dashed border-white/20 hover:border-[#00f0ff] flex items-center justify-center transition-all group-hover:scale-105 shadow-md">
               <Plus className="w-6 h-6 text-gray-400 group-hover:text-[#00f0ff]" />
             </div>
-            <span className="text-xs text-gray-400 group-hover:text-white font-medium">Baru</span>
+            <span className="text-xs text-gray-400 group-hover:text-white font-medium">
+              Baru
+            </span>
           </div>
 
           {/* Story Highlights Circles */}
@@ -362,7 +427,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                   className="w-15 h-15 rounded-[14px] object-cover border border-black"
                 />
               </div>
-              <span className="text-xs text-gray-300 group-hover:text-[#00f0ff] font-medium">{hl.title}</span>
+              <span className="text-xs text-gray-300 group-hover:text-[#00f0ff] font-medium">
+                {hl.title}
+              </span>
             </div>
           ))}
         </div>
@@ -371,42 +438,48 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <div className="flex border-b border-white/10">
           <button
             type="button"
-            onClick={() => setActiveTab('posts')}
+            onClick={() => setActiveTab("posts")}
             className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === 'posts' ? 'text-[#00f0ff]' : 'text-gray-500 hover:text-gray-300'
+              activeTab === "posts"
+                ? "text-[#00f0ff]"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             <Grid className="w-4 h-4" />
             <span>POSTS</span>
-            {activeTab === 'posts' && (
+            {activeTab === "posts" && (
               <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
             )}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('reels')}
+            onClick={() => setActiveTab("reels")}
             className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === 'reels' ? 'text-[#00f0ff]' : 'text-gray-500 hover:text-gray-300'
+              activeTab === "reels"
+                ? "text-[#00f0ff]"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             <Film className="w-4 h-4" />
             <span>REELS</span>
-            {activeTab === 'reels' && (
+            {activeTab === "reels" && (
               <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
             )}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('saved')}
+            onClick={() => setActiveTab("saved")}
             className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === 'saved' ? 'text-[#00f0ff]' : 'text-gray-500 hover:text-gray-300'
+              activeTab === "saved"
+                ? "text-[#00f0ff]"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             <Bookmark className="w-4 h-4" />
             <span>SAVED</span>
-            {activeTab === 'saved' && (
+            {activeTab === "saved" && (
               <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
             )}
           </button>
@@ -431,7 +504,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           ))}
         </div>
-
       </main>
     </div>
   );
