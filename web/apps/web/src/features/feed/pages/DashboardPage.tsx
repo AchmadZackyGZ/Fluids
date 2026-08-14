@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   TrendingUp,
   UserPlus,
+  User,
   X,
 } from "lucide-react";
 
@@ -32,12 +33,16 @@ interface DashboardPageProps {
     bio?: string;
   };
   welcomeToast?: string;
+  onNavigateToProfile?: () => void;
+  onNavigateToNetwork?: () => void;
   onLogout: () => void;
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   user,
   welcomeToast,
+  onNavigateToProfile,
+  onNavigateToNetwork,
   onLogout,
 }) => {
   const [likesCount, setLikesCount] = useState(1240);
@@ -103,9 +108,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <h1 className="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00f0ff] to-[#a855f7]">
                 FLUIDS
               </h1>
-              {/* <span className="text-[10px] text-[#00f0ff] uppercase tracking-widest font-mono block">
-                CYBERNET ACTIVE
-              </span> */}
             </div>
           </div>
 
@@ -119,13 +121,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <span>Dashboard</span>
             </a>
 
-            <a
-              href="#network"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
+            <button
+              type="button"
+              onClick={onNavigateToNetwork}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
             >
-              <Network className="w-5 h-5" />
+              <Network className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
               <span>Network</span>
-            </a>
+            </button>
 
             <a
               href="#messages"
@@ -153,6 +156,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <Settings className="w-5 h-5" />
               <span>Settings</span>
             </a>
+            
+            <button
+              type="button"
+              onClick={onNavigateToProfile}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
+            >
+              <User className="w-5 h-5 text-[#00f0ff] group-hover:scale-110 transition-transform" />
+              <span>Profile</span>
+            </button>
           </nav>
 
           {/* Glowing Create Post CTA Button */}
@@ -250,10 +262,14 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <img
                 src={user.avatarUrl}
                 alt={displayName}
-                className="w-10 h-10 rounded-xl object-cover border border-[#00f0ff]/50"
+                className="w-10 h-10 rounded-xl object-cover border border-[#00f0ff]/50 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={onNavigateToProfile}
               />
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+              <div 
+                onClick={onNavigateToProfile}
+                className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_10px_rgba(0,240,255,0.3)] cursor-pointer hover:scale-105 transition-transform"
+              >
                 <div className="w-full h-full rounded-[10px] bg-[#080a0f] flex items-center justify-center font-bold text-white text-sm">
                   {initialLetter}
                 </div>
@@ -395,23 +411,26 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
       {/* ================================================================= */}
       <aside className="hidden xl:flex flex-col w-80 border-l border-white/5 bg-[#080a0f] p-6 h-screen sticky top-0 space-y-6 overflow-y-auto">
         {/* User Quick Profile Card */}
-        <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
+        <div 
+          onClick={onNavigateToProfile}
+          className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4 cursor-pointer hover:border-[#00f0ff]/50 hover:bg-white/5 transition-all group"
+        >
           <div className="flex items-center gap-3">
             {user.avatarUrl ? (
               <img
                 src={user.avatarUrl}
                 alt={displayName}
-                className="w-12 h-12 rounded-2xl object-cover border border-[#00f0ff]"
+                className="w-12 h-12 rounded-2xl object-cover border border-[#00f0ff] group-hover:scale-105 transition-transform"
               />
             ) : (
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.4)] group-hover:scale-105 transition-transform">
                 <div className="w-full h-full rounded-[14px] bg-[#080a0f] flex items-center justify-center font-extrabold text-white text-lg">
                   {initialLetter}
                 </div>
               </div>
             )}
             <div>
-              <h3 className="text-sm font-bold text-white">{displayName}</h3>
+              <h3 className="text-sm font-bold text-white group-hover:text-[#00f0ff] transition-colors">{displayName}</h3>
               <span className="text-xs text-gray-400">@{username}</span>
             </div>
           </div>

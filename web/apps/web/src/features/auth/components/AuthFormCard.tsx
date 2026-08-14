@@ -1,27 +1,47 @@
-import React, { useState } from 'react';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 
 interface AuthFormCardProps {
-  onRegisterSuccess?: (userData: { fullName: string; username: string; email: string }) => void;
-  onLoginSuccess?: (userData: { fullName: string; username: string; email: string }) => void;
+  onRegisterSuccess?: (userData: {
+    fullName: string;
+    username: string;
+    email: string;
+  }) => void;
+  onLoginSuccess?: (userData: {
+    fullName: string;
+    username: string;
+    email: string;
+  }) => void;
 }
 
-export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, onLoginSuccess }) => {
-  const [activeTab, setActiveTab] = useState<'signin' | 'register'>('signin');
+export const AuthFormCard: React.FC<AuthFormCardProps> = ({
+  onRegisterSuccess,
+  onLoginSuccess,
+}) => {
+  const [activeTab, setActiveTab] = useState<"signin" | "register">("signin");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Form States for Sign In
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
 
   // Form States for Register
-  const [regFullName, setRegFullName] = useState('');
-  const [regUsername, setRegUsername] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
+  const [regFullName, setRegFullName] = useState("");
+  const [regUsername, setRegUsername] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,41 +50,43 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
     setSuccessMessage(null);
 
     try {
-      const response = await fetch('/api/v1/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Sign in failed');
+        throw new Error(data.error || "Sign in failed");
       }
 
       if (data.data?.token) {
-        localStorage.setItem('fluids_token', data.data.token);
+        localStorage.setItem("fluids_token", data.data.token);
       }
 
       const userData = data.data?.user || {
-        fullName: 'Achmad Zacky',
-        username: loginEmail.split('@')[0] || 'achmadzacky',
+        fullName: "Achmad Zacky",
+        username: loginEmail.split("@")[0] || "achmadzacky",
         email: loginEmail,
       };
 
-      setSuccessMessage('Sign in successful! Redirecting to Dashboard Home....');
+      setSuccessMessage(
+        "Sign in successful! Redirecting to Dashboard Home....",
+      );
 
       setTimeout(() => {
         if (onLoginSuccess) {
           onLoginSuccess({
-            fullName: userData.full_name || userData.fullName || 'Achmad Zacky',
-            username: userData.username || loginEmail.split('@')[0],
+            fullName: userData.full_name || userData.fullName || "Achmad Zacky",
+            username: userData.username || loginEmail.split("@")[0],
             email: userData.email || loginEmail,
           });
         }
       }, 1000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Connection error. Please try again.');
+      setErrorMessage(err.message || "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -77,9 +99,9 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
     setSuccessMessage(null);
 
     try {
-      const response = await fetch('/api/v1/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/v1/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: regFullName,
           username: regUsername,
@@ -91,14 +113,16 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        throw new Error(data.error || "Registration failed");
       }
 
       if (data.data?.token) {
-        localStorage.setItem('fluids_token', data.data.token);
+        localStorage.setItem("fluids_token", data.data.token);
       }
 
-      setSuccessMessage('Account created successfully! Launching your workspace...');
+      setSuccessMessage(
+        "Account created successfully! Launching your workspace...",
+      );
 
       setTimeout(() => {
         if (onRegisterSuccess) {
@@ -110,7 +134,7 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
         }
       }, 1000);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Connection error. Please try again.');
+      setErrorMessage(err.message || "Connection error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -121,25 +145,35 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
       {/* Tab Switcher */}
       <div className="flex border-b border-white/10 mb-8 relative">
         <button
-          onClick={() => { setActiveTab('signin'); setErrorMessage(null); }}
+          onClick={() => {
+            setActiveTab("signin");
+            setErrorMessage(null);
+          }}
           className={`flex-1 pb-4 text-lg font-bold transition-all relative ${
-            activeTab === 'signin' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+            activeTab === "signin"
+              ? "text-white"
+              : "text-gray-500 hover:text-gray-300"
           }`}
         >
           Sign In
-          {activeTab === 'signin' && (
+          {activeTab === "signin" && (
             <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#00f0ff] to-[#a855f7] rounded-t-md shadow-[0_0_12px_#00f0ff]" />
           )}
         </button>
 
         <button
-          onClick={() => { setActiveTab('register'); setErrorMessage(null); }}
+          onClick={() => {
+            setActiveTab("register");
+            setErrorMessage(null);
+          }}
           className={`flex-1 pb-4 text-lg font-bold transition-all relative ${
-            activeTab === 'register' ? 'text-white' : 'text-gray-500 hover:text-gray-300'
+            activeTab === "register"
+              ? "text-white"
+              : "text-gray-500 hover:text-gray-300"
           }`}
         >
           Register
-          {activeTab === 'register' && (
+          {activeTab === "register" && (
             <span className="absolute bottom-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#00f0ff] to-[#a855f7] rounded-t-md shadow-[0_0_12px_#00f0ff]" />
           )}
         </button>
@@ -161,7 +195,7 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
       )}
 
       {/* SIGN IN FORM */}
-      {activeTab === 'signin' && (
+      {activeTab === "signin" && (
         <form onSubmit={handleSignIn} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
@@ -187,7 +221,7 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
@@ -199,7 +233,11 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -212,7 +250,10 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
               />
               <span>Remember Me</span>
             </label>
-            <a href="#forgot" className="text-gray-400 hover:text-[#00f0ff] transition-colors">
+            <a
+              href="#forgot"
+              className="text-gray-400 hover:text-[#00f0ff] transition-colors"
+            >
               Forgot Password?
             </a>
           </div>
@@ -235,7 +276,7 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
       )}
 
       {/* REGISTER FORM */}
-      {activeTab === 'register' && (
+      {activeTab === "register" && (
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
@@ -295,7 +336,7 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 required
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
@@ -307,7 +348,11 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#00f0ff]"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -346,9 +391,9 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
           onClick={() => {
             if (onRegisterSuccess) {
               onRegisterSuccess({
-                fullName: 'Google Explorer',
-                username: 'google_user',
-                email: 'user@google.com',
+                fullName: "Google Explorer",
+                username: "google_user",
+                email: "user@google.com",
               });
             }
           }}
@@ -380,9 +425,9 @@ export const AuthFormCard: React.FC<AuthFormCardProps> = ({ onRegisterSuccess, o
           onClick={() => {
             if (onRegisterSuccess) {
               onRegisterSuccess({
-                fullName: 'GitHub Developer',
-                username: 'github_dev',
-                email: 'dev@github.com',
+                fullName: "GitHub Developer",
+                username: "github_dev",
+                email: "dev@github.com",
               });
             }
           }}
