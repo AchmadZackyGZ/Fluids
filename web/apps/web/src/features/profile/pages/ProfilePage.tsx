@@ -1,27 +1,15 @@
-import React, { useState } from "react";
-import {
-  LayoutDashboard,
-  Network,
-  MessageSquare,
-  Compass,
-  Settings,
-  User,
-  Plus,
-  HelpCircle,
-  LogOut,
-  Edit3,
-  Share2,
-  Grid,
-  Film,
-  Bookmark,
-  CheckCircle2,
-} from "lucide-react";
-import { EditProfileModal } from "../components/EditProfileModal";
-import {
-  StoryViewerModal,
-  StoryItem,
-} from "../../feed/components/StoryViewerModal";
-import { AddStoryModal } from "../../feed/components/AddStoryModal";
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, Network, MessageSquare, Compass, Film, Settings, 
+  User, Plus, LogOut, Edit3, Share2, Grid, Bookmark, CheckCircle2, 
+  Archive, UserCheck, Heart, MessageCircle
+} from 'lucide-react';
+import { EditProfileModal } from '../components/EditProfileModal';
+import { StoryViewerModal, StoryItem } from '../../feed/components/StoryViewerModal';
+import { AddStoryModal } from '../../feed/components/AddStoryModal';
+import { CreateHighlightModal } from '../components/CreateHighlightModal';
+import { DevActivityHeatmap } from '../components/DevActivityHeatmap';
+import { Sidebar } from '../../../components/Sidebar';
 
 interface ProfilePageProps {
   user: {
@@ -32,11 +20,26 @@ interface ProfilePageProps {
     avatarUrl?: string;
     bio?: string;
   };
+  viewingUser?: {
+    id?: string;
+    username?: string;
+    fullName?: string;
+    avatarUrl?: string;
+    bio?: string;
+    techStack?: string[];
+    note?: string;
+    postsCount?: string | number;
+    followersCount?: string | number;
+    followingCount?: string | number;
+    isFollowing?: boolean;
+  } | null;
   onNavigateToDashboard: () => void;
-  onNavigateToNetwork?: () => void;
-  onNavigateToExplore?: () => void;
-  onNavigateToMessages?: () => void;
-  onNavigateToReels?: () => void;
+  onNavigateToNetwork: () => void;
+  onNavigateToExplore: () => void;
+  onNavigateToMessages: () => void;
+  onNavigateToReels: () => void;
+  onNavigateToProfile: (targetUser?: any) => void;
+  onNavigateToSettings: () => void;
   onUpdateProfile: (updatedData: {
     fullName: string;
     username: string;
@@ -46,104 +49,139 @@ interface ProfilePageProps {
   onLogout: () => void;
 }
 
+interface HighlightItem {
+  id: string;
+  title: string;
+  img: string;
+  stories: StoryItem[];
+}
+
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   user,
+  viewingUser,
   onNavigateToDashboard,
   onNavigateToNetwork,
   onNavigateToExplore,
   onNavigateToMessages,
   onNavigateToReels,
+  onNavigateToProfile,
+  onNavigateToSettings,
   onUpdateProfile,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<"posts" | "reels" | "saved">(
-    "posts",
-  );
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'tagged'>('posts');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
-  const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(
-    null,
-  );
+  const [isCreateHighlightOpen, setIsCreateHighlightOpen] = useState(false);
+  const [activeStoryView, setActiveStoryView] = useState<StoryItem[] | null>(null);
 
-  const [userNote, setUserNote] = useState<string>("Catatan status...");
+  const [userNote, setUserNote] = useState<string>('Catatan...');
 
-  const displayName = user.fullName || "Achmad Zacky";
-  const username = user.username || "achmadzacky";
-  const bio =
-    user.bio ||
-    "Lead Cybernetics Architect at FLUIDS. Crafting neural interfaces and high-fidelity augmented realities. Exploring the void between human cognition and synthetic consciousness.";
+  const isOwnProfile = !viewingUser || viewingUser.username === user.username;
+  const [isFollowingState, setIsFollowingState] = useState(viewingUser?.isFollowing ?? false);
+
+  const displayName = isOwnProfile 
+    ? (user.fullName || 'Achmad Zacky') 
+    : (viewingUser?.fullName || viewingUser?.username || 'Developer');
+  const username = isOwnProfile 
+    ? (user.username || 'achmadzacky') 
+    : (viewingUser?.username || 'developer');
+  const avatarUrl = isOwnProfile 
+    ? user.avatarUrl 
+    : viewingUser?.avatarUrl;
+  const bio = isOwnProfile 
+    ? (user.bio || 'Lead Cybernetics Architect @ FLUIDS. Crafting high-performance distributed systems & web applications.') 
+    : (viewingUser?.bio || 'Developer @ FLUIDS. Exploring low-level systems, GPU shaders, and distributed computing.');
+  const techStack = isOwnProfile
+    ? ['Go', 'TypeScript', 'PostgreSQL', 'Docker', 'React', 'TailwindCSS']
+    : (viewingUser?.techStack || ['C++', 'GLSL', 'Vulkan', 'Rust', 'DirectX 12']);
+  const noteText = isOwnProfile 
+    ? userNote 
+    : (viewingUser?.note || 'Coding...');
+  const postsCount = isOwnProfile ? 342 : (viewingUser?.postsCount || 128);
+  const followersCount = isOwnProfile ? '14.2k' : (viewingUser?.followersCount || '45.2k');
+  const followingCount = isOwnProfile ? 892 : (viewingUser?.followingCount || 342);
   const initialLetter = displayName.charAt(0).toUpperCase();
 
-  const storyHighlights = [
+  const [storyHighlightsList, setStoryHighlightsList] = useState<HighlightItem[]>([
     {
-      id: "hl-1",
-      title: "CyberArt",
-      img: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150",
-      story: {
-        id: "s-hl-1",
-        userName: displayName,
-        userAvatar:
-          user.avatarUrl ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-        mediaUrl:
-          "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
-        caption: "CyberArt collection 2026 #CyberArt",
-        timeAgo: "Highlights",
-      },
+      id: 'hl-1',
+      title: 'CyberArt',
+      img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=150',
+      stories: [
+        {
+          id: 's-hl-1',
+          userName: displayName,
+          userAvatar: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          mediaUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800',
+          caption: 'CyberArt collection 2026 #CyberArt',
+          timeAgo: 'Highlights',
+        },
+      ],
     },
     {
-      id: "hl-2",
-      title: "Projects",
-      img: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150",
-      story: {
-        id: "s-hl-2",
-        userName: displayName,
-        userAvatar:
-          user.avatarUrl ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-        mediaUrl:
-          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800",
-        caption: "Neural Architecture UI Projects",
-        timeAgo: "Highlights",
-      },
+      id: 'hl-2',
+      title: 'Projects',
+      img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150',
+      stories: [
+        {
+          id: 's-hl-2',
+          userName: displayName,
+          userAvatar: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          mediaUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800',
+          caption: 'Neural Architecture UI Projects',
+          timeAgo: 'Highlights',
+        },
+      ],
     },
     {
-      id: "hl-3",
-      title: "Setup 2026",
-      img: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
-      story: {
-        id: "s-hl-3",
-        userName: displayName,
-        userAvatar:
-          user.avatarUrl ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
-        mediaUrl:
-          "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800",
-        caption: "Cyberpunk Battlestation Node",
-        timeAgo: "Highlights",
-      },
+      id: 'hl-3',
+      title: 'Setup 2026',
+      img: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150',
+      stories: [
+        {
+          id: 's-hl-3',
+          userName: displayName,
+          userAvatar: avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+          mediaUrl: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=800',
+          caption: 'Cyberpunk Battlestation Node',
+          timeAgo: 'Highlights',
+        },
+      ],
     },
-  ];
+  ]);
+
+  const handleCreateHighlight = (newHighlight: {
+    title: string;
+    coverImg: string;
+    stories: StoryItem[];
+  }) => {
+    const newEntry = {
+      id: `hl-${Date.now()}`,
+      title: newHighlight.title,
+      img: newHighlight.coverImg,
+      stories: newHighlight.stories,
+    };
+    setStoryHighlightsList([newEntry, ...storyHighlightsList]);
+    setIsCreateHighlightOpen(false);
+  };
 
   const samplePosts = [
-    "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?q=80&w=600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop",
+    { id: 1, img: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=600&auto=format&fit=crop', likes: '1.4k', comments: '92' },
+    { id: 2, img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop', likes: '2.8k', comments: '143' },
+    { id: 3, img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=600&auto=format&fit=crop', likes: '4.1k', comments: '312' },
+    { id: 4, img: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop', likes: '980', comments: '45' },
+    { id: 5, img: 'https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?q=80&w=600&auto=format&fit=crop', likes: '3.5k', comments: '210' },
+    { id: 6, img: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=600&auto=format&fit=crop', likes: '5.2k', comments: '489' },
   ];
 
-  const handleAddStory = (newStory: {
-    mediaUrl: string;
-    caption: string;
-    note: string;
-  }) => {
+  const handleAddStory = (newStory: { mediaUrl: string; caption: string; note: string }) => {
     if (newStory.note) setUserNote(newStory.note);
   };
 
   return (
-    <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body">
+    <div className="w-full h-screen bg-canvas text-text-primary flex overflow-hidden font-body select-none">
+      
       {/* Modal Edit Profile */}
       {isEditModalOpen && (
         <EditProfileModal
@@ -162,6 +200,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         />
       )}
 
+      {/* Modal Create Highlight */}
+      {isCreateHighlightOpen && (
+        <CreateHighlightModal
+          user={user}
+          onClose={() => setIsCreateHighlightOpen(false)}
+          onCreateHighlight={handleCreateHighlight}
+        />
+      )}
+
       {/* Modal Fullscreen Story Viewer */}
       {activeStoryView && (
         <StoryViewerModal
@@ -171,339 +218,295 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       )}
 
       {/* ================================================================= */}
-      {/* 1. LEFT SIDEBAR NAVIGATION (20% Widescreen Column)                */}
+      {/* 1. LEFT SIDEBAR NAVIGATION */}
       {/* ================================================================= */}
-      <aside className="hidden lg:flex flex-col justify-between w-64 h-screen border-r border-white/5 bg-[#080a0f] p-6 shrink-0 select-none">
-        <div className="space-y-6">
-          {/* Branding Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              <div className="w-full h-full bg-[#080a0f] rounded-[10px] flex items-center justify-center font-extrabold text-white text-sm">
-                F
-              </div>
+      <Sidebar
+        activeView="profile"
+        user={user}
+        onNavigateToDashboard={onNavigateToDashboard}
+        onNavigateToNetwork={onNavigateToNetwork}
+        onNavigateToExplore={onNavigateToExplore}
+        onNavigateToMessages={onNavigateToMessages}
+        onNavigateToReels={onNavigateToReels}
+        onNavigateToProfile={() => onNavigateToProfile()}
+        onNavigateToSettings={onNavigateToSettings}
+        onLogout={onLogout}
+      />
+
+      {/* ================================================================= */}
+      {/* 2. INSTAGRAM-AUTHENTIC PROFILE STREAM */}
+      {/* ================================================================= */}
+      <main className="flex-1 h-screen overflow-y-auto px-4 md:px-12 py-8 space-y-8 max-w-4xl mx-auto scrollbar-none">
+        
+        {/* Instagram Header Layout (2-Column Desktop Grid) */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-8 md:gap-14 pt-2">
+          
+          {/* Avatar Section + Floating Note Bubble */}
+          <div className="relative flex-shrink-0 mx-auto md:mx-0 group cursor-pointer">
+            {/* Note Bubble Float */}
+            <div
+              onClick={() => {
+                if (isOwnProfile) {
+                  setIsAddStoryOpen(true);
+                }
+              }}
+              className="absolute -top-6 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-sm bg-surface-raised border border-border-default text-[10px] font-mono text-text-primary shadow-sm hover:border-border-strong transition-colors z-10 flex items-center gap-1.5"
+            >
+              <span>{noteText}</span>
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00f0ff] to-[#a855f7]">
-                FLUIDS
-              </h1>
+
+            {/* Avatar Circle */}
+            <div 
+              onClick={() => {
+                if (isOwnProfile) {
+                  setIsAddStoryOpen(true);
+                }
+              }}
+              className="w-32 h-32 rounded-full aspect-square shrink-0 p-0.5 border border-border-default hover:border-accent transition-colors"
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={displayName}
+                  className="w-full h-full rounded-full object-cover aspect-square"
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-surface-raised border border-border-default flex items-center justify-center text-3xl font-mono font-bold text-accent">
+                  {initialLetter}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            <button
-              type="button"
-              onClick={onNavigateToDashboard}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToNetwork}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Network className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Network</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToMessages}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-                <span>Messages</span>
+          {/* Right Column Details (Username, Actions, Stats, Bio) */}
+          <div className="flex-1 space-y-4 w-full">
+            
+            {/* Row 1: Username & Action Buttons */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-text-primary tracking-wide font-mono">@{username}</h2>
+                <CheckCircle2 className="w-4 h-4 text-accent" />
               </div>
-              <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </button>
 
-            <button
-              type="button"
-              onClick={onNavigateToExplore}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Explore</span>
-            </button>
+              <div className="flex items-center gap-2">
+                {isOwnProfile ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="px-3.5 py-1.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-xs font-semibold text-text-primary transition-colors cursor-pointer"
+                    >
+                      Edit Profile
+                    </button>
 
-            <button
-              type="button"
-              onClick={onNavigateToReels}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Reels</span>
-            </button>
+                    <button
+                      type="button"
+                      className="px-3.5 py-1.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                      <span>Arsip</span>
+                    </button>
 
-            <a
-              href="#settings"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </a>
-
-            {/* Profile Navigation (ACTIVE STATE) */}
-            <a
-              href="#profile"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] font-bold text-sm shadow-[0_0_15px_rgba(0,240,255,0.15)]"
-            >
-              <User className="w-5 h-5 text-[#00f0ff]" />
-              <span>Profile</span>
-            </a>
-          </nav>
-
-          {/* Glowing Create Post CTA Button */}
-          <button
-            type="button"
-            className="w-full py-3.5 btn-neon-gradient flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-extrabold shadow-[0_0_20px_rgba(0,240,255,0.3)] cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create Post</span>
-          </button>
-        </div>
-
-        {/* Bottom Logout Button */}
-        <div className="space-y-1 border-t border-white/5 pt-4 mt-auto">
-          <button
-            type="button"
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/15 text-xs font-semibold transition-all text-left cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ================================================================= */}
-      {/* 2. MAIN USER PROFILE CONTENT STREAM (Independent Scroll)         */}
-      {/* ================================================================= */}
-      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
-        {/* Profile Banner & Info Header Card */}
-        <div className="glass-panel rounded-3xl p-6 md:p-8 border border-white/10 relative overflow-hidden shadow-2xl">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-            {/* Left Avatar & Name */}
-            <div className="flex items-start gap-5">
-              {/* Avatar Image + Note Bubble ("Catatan...") */}
-              <div className="relative flex-shrink-0 group">
-                {/* Note Bubble Float (Catatan Instagram Style) */}
-                <div
-                  onClick={() => setIsAddStoryOpen(true)}
-                  className="absolute -top-7 left-1/2 -translate-x-1/2 px-3 py-1 rounded-xl bg-white/10 border border-[#00f0ff]/40 backdrop-blur-md text-[10px] text-white font-semibold whitespace-nowrap shadow-[0_0_12px_rgba(0,240,255,0.3)] cursor-pointer hover:scale-105 transition-transform animate-bounce"
-                >
-                  💬 {userNote}
-                </div>
-
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt={displayName}
-                    onClick={() => setIsAddStoryOpen(true)}
-                    className="w-24 h-24 rounded-2xl object-cover border-2 border-[#00f0ff] shadow-[0_0_25px_rgba(0,240,255,0.4)] cursor-pointer hover:opacity-90 transition-opacity"
-                  />
+                    <button
+                      type="button"
+                      onClick={onNavigateToSettings}
+                      className="p-1.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </button>
+                  </>
                 ) : (
-                  <div
-                    onClick={() => setIsAddStoryOpen(true)}
-                    className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_25px_rgba(0,240,255,0.4)] cursor-pointer hover:scale-105 transition-transform"
-                  >
-                    <div className="w-full h-full rounded-[14px] bg-[#080a0f] flex items-center justify-center text-3xl font-extrabold text-white">
-                      {initialLetter}
-                    </div>
-                  </div>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setIsFollowingState(!isFollowingState)}
+                      className={`px-4 py-1.5 rounded-sm text-xs font-semibold font-mono transition-colors cursor-pointer ${
+                        isFollowingState
+                          ? 'bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-text-primary'
+                          : 'bg-accent hover:bg-accent-hover text-canvas'
+                      }`}
+                    >
+                      {isFollowingState ? 'Mengikuti' : 'Ikuti'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={onNavigateToMessages}
+                      className="px-3.5 py-1.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-xs font-semibold text-text-primary transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Kirim Pesan</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToProfile()}
+                      className="px-3 py-1.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-xs font-mono text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      Profil Saya
+                    </button>
+                  </>
                 )}
               </div>
+            </div>
 
-              {/* Text Info */}
-              <div className="space-y-1.5 max-w-md pt-2">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-extrabold text-white tracking-wide">
-                    {displayName}
-                  </h2>
-                  <CheckCircle2 className="w-5 h-5 text-[#00f0ff] fill-[#00f0ff]/20" />
-                </div>
-
-                <span className="text-xs text-[#00f0ff] font-mono block">
-                  @{username}
-                </span>
-
-                <p className="text-xs text-gray-300 leading-relaxed pt-1">
-                  {bio}
-                </p>
+            {/* Row 2: Stats Row */}
+            <div className="flex items-center gap-8 text-xs font-mono text-text-secondary">
+              <div>
+                <span className="font-semibold text-text-primary">{postsCount} </span>
+                <span>posts</span>
+              </div>
+              <div>
+                <span className="font-semibold text-text-primary">{followersCount} </span>
+                <span>followers</span>
+              </div>
+              <div>
+                <span className="font-semibold text-text-primary">{followingCount} </span>
+                <span>following</span>
               </div>
             </div>
 
-            {/* Right Action Buttons */}
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <button
-                type="button"
-                onClick={() => setIsEditModalOpen(true)}
-                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 hover:border-[#00f0ff]/50 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Edit3 className="w-4 h-4 text-[#00f0ff]" />
-                <span>EDIT PROFILE</span>
-              </button>
-
-              <button
-                type="button"
-                className="flex-1 md:flex-none px-5 py-2.5 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
-              >
-                <Share2 className="w-4 h-4" />
-                <span>SHARE</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Profile Stats Metrics */}
-          <div className="grid grid-cols-4 gap-4 text-center pt-6 mt-6 border-t border-white/5">
-            <div>
-              <span className="block text-xl font-extrabold text-white">
-                342
-              </span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Posts
-              </span>
+            {/* Row 3: Full Name & Bio Text */}
+            <div className="space-y-1.5 pt-0.5">
+              <h3 className="text-xs font-semibold text-text-primary">{displayName}</h3>
+              <p className="text-xs text-text-secondary leading-relaxed max-w-lg">{bio}</p>
+              
+              {/* Tech Stack Tags */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {techStack.map((tech, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 rounded-sm bg-surface-raised border border-border-default text-text-secondary font-mono text-[10px]"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <span className="block text-xl font-extrabold text-white">
-                14.2k
-              </span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Followers
-              </span>
-            </div>
-
-            <div>
-              <span className="block text-xl font-extrabold text-white">
-                892
-              </span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Following
-              </span>
-            </div>
-
-            <div>
-              <span className="block text-xl font-extrabold text-[#00f0ff]">
-                98%
-              </span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                Vector Sync
-              </span>
-            </div>
           </div>
         </div>
 
-        {/* STORY HIGHLIGHTS BAR (Persis Instagram Desktop Story Highlights) */}
-        <div className="flex items-center gap-6 overflow-x-auto pb-2 scrollbar-none">
-          {/* Add New Highlight Button (+ Baru) */}
-          <div
-            onClick={() => setIsAddStoryOpen(true)}
-            className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
-          >
-            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-dashed border-white/20 hover:border-[#00f0ff] flex items-center justify-center transition-all group-hover:scale-105 shadow-md">
-              <Plus className="w-6 h-6 text-gray-400 group-hover:text-[#00f0ff]" />
-            </div>
-            <span className="text-xs text-gray-400 group-hover:text-white font-medium">
-              Baru
-            </span>
-          </div>
+        {/* Developer Activity Heatmap Widget (GitHub Style) */}
+        <div className="pt-2">
+          <DevActivityHeatmap username={username} totalContributions={isOwnProfile ? 1248 : 892} streakDays={isOwnProfile ? 42 : 19} />
+        </div>
 
-          {/* Story Highlights Circles */}
-          {storyHighlights.map((hl) => (
+        {/* Story Highlights Bar */}
+        <div className="flex items-center gap-6 overflow-x-auto pb-2 scrollbar-none border-t border-border-default pt-4">
+          {/* Add New Highlight Button (+ Baru) */}
+          {isOwnProfile && (
+            <div
+              onClick={() => setIsCreateHighlightOpen(true)}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+            >
+              <div className="w-16 h-16 rounded-full aspect-square shrink-0 bg-surface-raised border border-dashed border-border-strong group-hover:border-accent flex items-center justify-center transition-colors">
+                <Plus className="w-5 h-5 text-text-secondary group-hover:text-accent" />
+              </div>
+              <span className="text-[11px] font-mono text-text-secondary group-hover:text-text-primary">Baru</span>
+            </div>
+          )}
+
+          {/* Story Highlights Items */}
+          {storyHighlightsList.map((hl) => (
             <div
               key={hl.id}
-              onClick={() => setActiveStoryView([hl.story])}
-              className="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer group"
+              onClick={() => setActiveStoryView(hl.stories)}
+              className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer group"
             >
-              <div className="p-0.5 rounded-2xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] shadow-[0_0_12px_rgba(0,240,255,0.3)] group-hover:scale-105 transition-transform">
+              <div className="w-16 h-16 rounded-full aspect-square shrink-0 p-0.5 border border-border-default group-hover:border-accent transition-colors overflow-hidden">
                 <img
                   src={hl.img}
                   alt={hl.title}
-                  className="w-15 h-15 rounded-[14px] object-cover border border-black"
+                  className="w-full h-full rounded-full object-cover aspect-square"
                 />
               </div>
-              <span className="text-xs text-gray-300 group-hover:text-[#00f0ff] font-medium">
+              <span className="text-[11px] font-mono text-text-secondary group-hover:text-text-primary truncate max-w-[70px]">
                 {hl.title}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Content Navigation Tabs */}
-        <div className="flex border-b border-white/10">
-          <button
-            type="button"
-            onClick={() => setActiveTab("posts")}
-            className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === "posts"
-                ? "text-[#00f0ff]"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <Grid className="w-4 h-4" />
-            <span>POSTS</span>
-            {activeTab === "posts" && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("reels")}
-            className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === "reels"
-                ? "text-[#00f0ff]"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <Film className="w-4 h-4" />
-            <span>REELS</span>
-            {activeTab === "reels" && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("saved")}
-            className={`pb-3 px-6 text-xs font-extrabold uppercase tracking-wider flex items-center gap-2 transition-all relative ${
-              activeTab === "saved"
-                ? "text-[#00f0ff]"
-                : "text-gray-500 hover:text-gray-300"
-            }`}
-          >
-            <Bookmark className="w-4 h-4" />
-            <span>SAVED</span>
-            {activeTab === "saved" && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00f0ff] shadow-[0_0_10px_#00f0ff]" />
-            )}
-          </button>
-        </div>
-
-        {/* Media Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-8">
-          {samplePosts.map((imgUrl, index) => (
-            <div
-              key={index}
-              className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group cursor-pointer"
+        {/* Instagram Profile Tabs & Grid Section */}
+        <div className="space-y-4">
+          
+          {/* Tabs Divider Bar */}
+          <div className="border-t border-border-default flex justify-center gap-10 text-xs font-mono tracking-wider">
+            
+            {/* POSTS TAB */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('posts')}
+              className={`py-3 flex items-center gap-2 border-t-2 transition-colors cursor-pointer ${
+                activeTab === 'posts'
+                  ? 'border-accent text-accent font-semibold -mt-[1px]'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              }`}
             >
-              <img
-                src={imgUrl}
-                alt={`Post ${index + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 text-white text-xs font-bold backdrop-blur-xs">
-                <span>❤️ 1.4k</span>
-                <span>💬 92</span>
+              <Grid className="w-3.5 h-3.5" />
+              <span>POSTINGAN</span>
+            </button>
+
+            {/* REELS TAB */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('reels')}
+              className={`py-3 flex items-center gap-2 border-t-2 transition-colors cursor-pointer ${
+                activeTab === 'reels'
+                  ? 'border-accent text-accent font-semibold -mt-[1px]'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Film className="w-3.5 h-3.5" />
+              <span>REELS</span>
+            </button>
+
+            {/* SAVED TAB */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('saved')}
+              className={`py-3 flex items-center gap-2 border-t-2 transition-colors cursor-pointer ${
+                activeTab === 'saved'
+                  ? 'border-accent text-accent font-semibold -mt-[1px]'
+                  : 'border-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Bookmark className="w-3.5 h-3.5" />
+              <span>TERSIMPAN</span>
+            </button>
+          </div>
+
+          {/* 3-Column Square Grid Layout */}
+          <div className="grid grid-cols-3 gap-3 md:gap-4 pb-8">
+            {samplePosts.map((post) => (
+              <div
+                key={post.id}
+                className="relative aspect-square rounded-md overflow-hidden border border-border-default group cursor-pointer bg-surface"
+              >
+                <img
+                  src={post.img}
+                  alt={`Post ${post.id}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Dark Hover Overlay with Likes & Comments Count */}
+                <div className="absolute inset-0 bg-canvas/75 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 text-text-primary font-mono font-medium text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <Heart className="w-4 h-4 text-diff-remove fill-diff-remove" />
+                    <span>{post.likes}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <MessageCircle className="w-4 h-4 text-text-primary" />
+                    <span>{post.comments}</span>
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
         </div>
+
       </main>
     </div>
   );

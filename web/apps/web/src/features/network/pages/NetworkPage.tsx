@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, Network, MessageSquare, Compass, Film, Settings, 
-  User, Plus, LogOut, Search, Sparkles, UserCheck, UserPlus, 
-  Hash, ShieldCheck, Cpu, ArrowUpRight, CheckCircle2, Filter
-} from 'lucide-react';
+import { Sidebar } from '../../../components/Sidebar';
+import { Search, Hash } from 'lucide-react';
 
 interface NetworkPageProps {
   user: {
@@ -13,9 +10,10 @@ interface NetworkPageProps {
   };
   onNavigateToDashboard: () => void;
   onNavigateToProfile: () => void;
-  onNavigateToExplore?: () => void;
-  onNavigateToMessages?: () => void;
-  onNavigateToReels?: () => void;
+  onNavigateToExplore: () => void;
+  onNavigateToMessages: () => void;
+  onNavigateToReels: () => void;
+  onNavigateToSettings: () => void;
   onLogout: () => void;
 }
 
@@ -26,52 +24,49 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
   onNavigateToExplore,
   onNavigateToMessages,
   onNavigateToReels,
+  onNavigateToSettings,
   onLogout,
 }) => {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'ai' | 'neural' | 'sys'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'creators' | 'devs' | 'designers'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null);
 
-  const [connectedNodes, setConnectedNodes] = useState<Record<string, boolean>>({});
+  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({});
 
-  const toggleConnect = (id: string) => {
-    setConnectedNodes((prev) => ({
+  const toggleFollow = (id: string) => {
+    setFollowingMap((prev) => ({
       ...prev,
       [id]: !prev[id],
     }));
   };
 
-  const highAffinityMatches = [
+  const suggestedConnections = [
     {
-      id: 'match-1',
+      id: 'sug-1',
       name: 'Dr. Sarah Vance',
       username: 'svance_neural',
-      role: 'Specializing in latent space cartography',
-      matchScore: '98%',
-      links: '12.4k',
+      role: 'Spatial Computing Architect',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
       isOnline: true,
     },
     {
-      id: 'match-2',
-      name: 'VOID_Art',
+      id: 'sug-2',
+      name: 'VOID Art',
       username: 'void_construct',
-      role: 'Synthesizing audio-visual hallucinations',
-      matchScore: '94%',
-      links: '8.9k',
+      role: 'Generative Audio-Visual Designer',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
       isOnline: false,
     },
   ];
 
-  const networkDiscoveryNodes = [
+  const discoveryCreators = [
     {
       id: 'disc-1',
       name: 'Kaelen Ren',
       username: 'kaelen_ren',
       role: 'Systems Architect',
-      bio: 'Building scalable infrastructure for the decentralized web. Coffee addict.',
-      tags: ['#Infrastructure', '#Web3', '#teknologi'],
+      bio: 'Membuat infrastruktur terdistribusi berkinerja tinggi.',
+      tags: ['#Infrastruktur', '#Web3', '#Teknologi'],
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300',
       banner: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600',
     },
@@ -79,228 +74,129 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
       id: 'disc-2',
       name: 'Nova Sync',
       username: 'nova_ghost',
-      role: 'Data Ghost',
-      bio: 'Extracting patterns from the noise. SecOps consultant by day, cyber-flaneur by night.',
-      tags: ['#SecOps', '#DataVis', '#teknologi'],
+      role: 'SecOps Specialist',
+      bio: 'Keamanan sistem dan visualisasi analisis data.',
+      tags: ['#SecOps', '#DataVis', '#Teknologi'],
       avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300',
       banner: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600',
     },
     {
       id: 'disc-3',
-      name: 'Unit_04',
+      name: 'Unit 04',
       username: 'unit_zero',
-      role: 'Generative Artist',
-      bio: 'Exploring the intersection of logic gates and emotional resonance.',
-      tags: ['#CyberArt', '#NeuralNet', '#AI_Art'],
+      role: 'Desainer UI/UX',
+      bio: 'Eksplorasi estetika antarmuka fungsional & minimalis.',
+      tags: ['#CyberArt', '#DesainUI', '#UIUX'],
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=300',
       banner: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600',
     },
   ];
 
   const trendingHashtags = [
-    { tag: '#teknologi', postsCount: '89.4k Posts' },
-    { tag: '#AI_Architects', postsCount: '45.2k Nodes' },
-    { tag: '#Neon_Grid_City', postsCount: '12.8k Nodes' },
-    { tag: '#ZeroDay_Exploits', postsCount: '8.9k Nodes' },
+    { tag: '#teknologi', postsCount: '89.4rb postingan' },
+    { tag: '#desain_ui', postsCount: '45.2rb postingan' },
+    { tag: '#cybersecurity', postsCount: '12.8rb postingan' },
+    { tag: '#web_development', postsCount: '8.9rb postingan' },
   ];
 
   const activeConnections = [
-    { name: 'Lex_Terminal', status: 'Active', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100' },
-    { name: 'Cipher_X', status: 'Active', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100' },
-    { name: 'Vera_Link', status: 'Active', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100' },
+    { name: 'Lex Terminal', handle: '@lex_terminal', avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100' },
+    { name: 'Cipher X', handle: '@cipher_x', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100' },
+    { name: 'Vera Link', handle: '@vera_link', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100' },
   ];
 
   return (
-    <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body">
+    <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body select-none">
       
-      {/* ================================================================= */}
-      {/* 1. LEFT SIDEBAR NAVIGATION (20% Widescreen Column)                */}
-      {/* ================================================================= */}
-      <aside className="hidden lg:flex flex-col justify-between w-64 h-screen border-r border-white/5 bg-[#080a0f] p-6 shrink-0 select-none">
-        <div className="space-y-6">
-          {/* Branding Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              <div className="w-full h-full bg-[#080a0f] rounded-[10px] flex items-center justify-center font-extrabold text-white text-sm">
-                F
-              </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00f0ff] to-[#a855f7]">
-                FLUIDS
-              </h1>
-            </div>
-          </div>
+      {/* 1. LEFT SIDEBAR NAVIGATION */}
+      <Sidebar
+        activeView="network"
+        user={user}
+        onNavigateToDashboard={onNavigateToDashboard}
+        onNavigateToNetwork={() => {}}
+        onNavigateToExplore={onNavigateToExplore}
+        onNavigateToMessages={onNavigateToMessages}
+        onNavigateToReels={onNavigateToReels}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToSettings={onNavigateToSettings}
+        onLogout={onLogout}
+      />
 
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            <button
-              type="button"
-              onClick={onNavigateToDashboard}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
-            </button>
-
-            {/* ACTIVE ITEM: NETWORK */}
-            <a
-              href="#network"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] font-bold text-sm shadow-[0_0_15px_rgba(0,240,255,0.15)]"
-            >
-              <Network className="w-5 h-5 text-[#00f0ff]" />
-              <span>Network</span>
-            </a>
-
-            <button
-              type="button"
-              onClick={onNavigateToMessages}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-                <span>Messages</span>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToExplore}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Compass className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Explore</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToReels}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Reels</span>
-            </button>
-
-            <a
-              href="#settings"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </a>
-
-            <button
-              type="button"
-              onClick={onNavigateToProfile}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <User className="w-5 h-5 text-gray-400 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Profile</span>
-            </button>
-          </nav>
-
-          {/* Glowing Create Post CTA Button */}
-          <button
-            type="button"
-            className="w-full py-3.5 btn-neon-gradient flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-extrabold shadow-[0_0_20px_rgba(0,240,255,0.3)] cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create Post</span>
-          </button>
-        </div>
-
-        {/* Bottom Logout Button */}
-        <div className="space-y-1 border-t border-white/5 pt-4 mt-auto">
-          <button
-            type="button"
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/15 text-xs font-semibold transition-all text-left cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ================================================================= */}
-      {/* 2. CENTER NETWORK DISCOVERY STREAM (Independent Scroll)          */}
-      {/* ================================================================= */}
-      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 space-y-8 max-w-4xl mx-auto">
+      {/* 2. CENTER STREAM */}
+      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 space-y-8 max-w-4xl mx-auto scrollbar-none">
         
         {/* Search & Category Filter Header */}
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search cyber nodes, creators, or #hashtags (e.g. #teknologi)..."
-                className="w-full bg-[#0d1017] border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-[#00f0ff] focus:ring-1 focus:ring-[#00f0ff] transition-all"
-              />
-            </div>
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari developer, repositori, atau #topik..."
+              className="w-full bg-surface border border-border-default rounded-sm py-2 pl-9 pr-4 text-xs font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong transition-colors"
+            />
           </div>
 
-          {/* Filter Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-border-default">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
             <button
               type="button"
-              onClick={() => { setActiveFilter('all'); setSelectedHashtag(null); }}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                activeFilter === 'all' && !selectedHashtag
-                  ? 'bg-white/10 border border-[#00f0ff]/50 text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+              onClick={() => setActiveFilter('all')}
+              className={`px-3 py-1.5 rounded-sm font-mono font-semibold transition-colors cursor-pointer ${
+                activeFilter === 'all'
+                  ? 'bg-accent-muted border border-accent/40 text-accent'
+                  : 'bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
               }`}
             >
-              All Nodes
+              Semua
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveFilter('ai')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                activeFilter === 'ai'
-                  ? 'bg-white/10 border border-[#00f0ff]/50 text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+              onClick={() => setActiveFilter('creators')}
+              className={`px-3 py-1.5 rounded-sm font-mono font-semibold transition-colors cursor-pointer ${
+                activeFilter === 'creators'
+                  ? 'bg-accent-muted border border-accent/40 text-accent'
+                  : 'bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
               }`}
             >
-              AI Researchers
+              Kreator
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveFilter('neural')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                activeFilter === 'neural'
-                  ? 'bg-white/10 border border-[#00f0ff]/50 text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+              onClick={() => setActiveFilter('devs')}
+              className={`px-3 py-1.5 rounded-sm font-mono font-semibold transition-colors cursor-pointer ${
+                activeFilter === 'devs'
+                  ? 'bg-accent-muted border border-accent/40 text-accent'
+                  : 'bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
               }`}
             >
-              Neural Artists
+              Pengembang
             </button>
 
             <button
               type="button"
-              onClick={() => setActiveFilter('sys')}
-              className={`px-4 py-2 rounded-xl font-bold transition-all ${
-                activeFilter === 'sys'
-                  ? 'bg-white/10 border border-[#00f0ff]/50 text-[#00f0ff] shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                  : 'bg-white/5 text-gray-400 hover:text-white'
+              onClick={() => setActiveFilter('designers')}
+              className={`px-3 py-1.5 rounded-sm font-mono font-semibold transition-colors cursor-pointer ${
+                activeFilter === 'designers'
+                  ? 'bg-accent-muted border border-accent/40 text-accent'
+                  : 'bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
               }`}
             >
-              SysAdmins
+              Desainer
             </button>
 
             {selectedHashtag && (
-              <span className="px-3 py-1.5 rounded-xl bg-[#00f0ff]/20 border border-[#00f0ff] text-[#00f0ff] font-mono font-bold flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-sm bg-accent-muted border border-accent/40 text-accent font-mono text-xs flex items-center gap-1.5">
                 <Hash className="w-3.5 h-3.5" />
                 {selectedHashtag}
                 <button
                   type="button"
                   onClick={() => setSelectedHashtag(null)}
-                  className="ml-1 hover:text-white"
+                  className="ml-1 hover:text-text-primary cursor-pointer"
                 >
                   ×
                 </button>
@@ -308,75 +204,58 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
             )}
           </div>
         </div>
+      </div>
 
-        {/* SECTION 1: High Affinity Vector Matches (ML Powered) */}
+        {/* SECTION 1: Saran untuk Anda */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#00f0ff]" />
-              <h2 className="text-lg font-bold text-white tracking-wide">
-                High Affinity Vector Matches
-              </h2>
-            </div>
-            <span className="text-xs text-gray-400 uppercase tracking-widest font-mono">
-              POWERED BY RECO ML
-            </span>
+          <div>
+            <h2 className="text-base font-semibold text-text-primary tracking-wide">
+              Saran untuk Anda
+            </h2>
+            <p className="text-xs text-text-secondary">
+              Pengguna dengan minat dan keahlian yang serupa
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {highAffinityMatches.map((match) => {
-              const isConnected = connectedNodes[match.id];
+            {suggestedConnections.map((userCard) => {
+              const isFollowing = followingMap[userCard.id];
               return (
                 <div
-                  key={match.id}
-                  className="glass-panel rounded-2xl p-5 border border-white/10 hover:border-[#00f0ff]/40 transition-all flex items-start justify-between gap-4 group"
+                  key={userCard.id}
+                  className="bg-surface rounded-md p-4 border border-border-default hover:border-border-strong transition-colors flex items-center justify-between gap-4"
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <div className="relative shrink-0">
                       <img
-                        src={match.avatar}
-                        alt={match.name}
-                        className="w-14 h-14 rounded-2xl object-cover border border-[#00f0ff]/50 group-hover:scale-105 transition-transform"
+                        src={userCard.avatar}
+                        alt={userCard.name}
+                        className="w-11 h-11 rounded-full object-cover border border-border-default aspect-square"
                       />
-                      {match.isOnline && (
-                        <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#080a0f] shadow-[0_0_8px_#10b981]" />
+                      {userCard.isOnline && (
+                        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-diff-add border-2 border-surface" />
                       )}
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-white group-hover:text-[#00f0ff] transition-colors">
-                          {match.name}
-                        </h3>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#00f0ff]/20 text-[#00f0ff] font-mono font-bold">
-                          {match.matchScore} Match
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-400 block font-mono">@{match.username}</span>
-                      <p className="text-xs text-gray-300 line-clamp-2 pt-0.5">{match.role}</p>
+                    <div className="min-w-0">
+                      <h3 className="text-xs font-semibold text-text-primary truncate">
+                        {userCard.name}
+                      </h3>
+                      <span className="text-[11px] text-text-secondary block font-mono">@{userCard.username}</span>
+                      <p className="text-[11px] text-text-muted truncate pt-0.5">{userCard.role}</p>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => toggleConnect(match.id)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                      isConnected
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                        : 'btn-neon-gradient'
+                    onClick={() => toggleFollow(userCard.id)}
+                    className={`px-3 py-1.5 rounded-sm text-xs font-mono transition-colors shrink-0 cursor-pointer ${
+                      isFollowing
+                        ? 'bg-surface border border-border-default text-text-muted hover:text-diff-remove'
+                        : 'bg-surface-raised border border-border-strong hover:border-accent text-text-primary hover:text-accent font-semibold'
                     }`}
                   >
-                    {isConnected ? (
-                      <>
-                        <UserCheck className="w-4 h-4" />
-                        <span>LINKED</span>
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-4 h-4" />
-                        <span>CONNECT NODE</span>
-                      </>
-                    )}
+                    {isFollowing ? 'Mengikuti' : 'Ikuti'}
                   </button>
                 </div>
               );
@@ -384,63 +263,62 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
           </div>
         </section>
 
-        {/* SECTION 2: Network Discovery Grid (With Interactive Hashtags) */}
+        {/* SECTION 2: Jelajahi Kreator & Komunitas */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-[#9d00ff]" />
-            <h2 className="text-lg font-bold text-white tracking-wide">
-              Network Discovery Clusters
+          <div>
+            <h2 className="text-base font-semibold text-text-primary tracking-wide">
+              Jelajahi Kreator & Komunitas
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {networkDiscoveryNodes.map((node) => {
-              const isConnected = connectedNodes[node.id];
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {discoveryCreators.map((node) => {
+              const isFollowing = followingMap[node.id];
               return (
                 <div
                   key={node.id}
-                  className="glass-panel rounded-2xl overflow-hidden border border-white/10 hover:border-[#9d00ff]/50 transition-all flex flex-col justify-between group"
+                  className="bg-surface rounded-md overflow-hidden border border-border-default hover:border-border-strong transition-colors flex flex-col justify-between"
                 >
                   {/* Banner */}
-                  <div className="relative h-24 w-full">
+                  <div className="relative h-20 w-full">
                     <img
                       src={node.banner}
                       alt={node.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#080a0f] via-black/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface via-black/40 to-transparent" />
                     
                     {/* Avatar Overlap */}
-                    <div className="absolute -bottom-5 left-4">
+                    <div className="absolute -bottom-4 left-4">
                       <img
                         src={node.avatar}
                         alt={node.name}
-                        className="w-12 h-12 rounded-xl object-cover border-2 border-[#080a0f] shadow-lg"
+                        className="w-10 h-10 rounded-full object-cover border-2 border-surface aspect-square"
                       />
                     </div>
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-4 pt-7 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="p-4 pt-6 space-y-3 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-white group-hover:text-[#00f0ff] transition-colors">
+                        <h3 className="text-xs font-semibold text-text-primary truncate">
                           {node.name}
                         </h3>
-                        <span className="text-[10px] text-gray-400 font-mono">@{node.username}</span>
+                        <span className="text-[10px] text-text-secondary font-mono">@{node.username}</span>
                       </div>
-                      <span className="text-xs text-[#00f0ff] font-semibold block">{node.role}</span>
-                      <p className="text-xs text-gray-300 leading-relaxed pt-2">{node.bio}</p>
+                      <span className="text-[11px] text-accent font-mono block pt-0.5">{node.role}</span>
+                      <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed pt-1.5">{node.bio}</p>
                     </div>
 
-                    {/* Interactive Hashtag Tags */}
-                    <div className="flex flex-wrap gap-1.5 pt-2">
+                    {/* Hashtag Badges */}
+                    <div className="flex flex-wrap gap-1 pt-1">
                       {node.tags.map((tag, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => setSelectedHashtag(tag)}
-                          className="px-2 py-1 rounded-md bg-white/5 hover:bg-[#00f0ff]/20 text-[10px] font-mono text-gray-300 hover:text-[#00f0ff] border border-white/5 hover:border-[#00f0ff]/30 transition-all cursor-pointer"
+                          className="px-2 py-0.5 rounded-sm bg-surface-raised hover:bg-surface border border-border-default hover:border-border-strong text-[10px] font-mono text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                         >
                           {tag}
                         </button>
@@ -450,24 +328,14 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
                     {/* Action Button */}
                     <button
                       type="button"
-                      onClick={() => toggleConnect(node.id)}
-                      className={`w-full mt-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                        isConnected
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                          : 'bg-white/10 hover:bg-white/20 text-white border border-white/10'
+                      onClick={() => toggleFollow(node.id)}
+                      className={`w-full mt-2 py-1.5 rounded-sm text-xs font-mono transition-colors cursor-pointer ${
+                        isFollowing
+                          ? 'bg-surface border border-border-default text-text-muted hover:text-diff-remove'
+                          : 'bg-surface-raised border border-border-strong hover:border-accent text-text-primary hover:text-accent font-semibold'
                       }`}
                     >
-                      {isConnected ? (
-                        <>
-                          <UserCheck className="w-4 h-4" />
-                          <span>Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4" />
-                          <span>Follow Node</span>
-                        </>
-                      )}
+                      {isFollowing ? 'Mengikuti' : 'Ikuti'}
                     </button>
                   </div>
                 </div>
@@ -478,54 +346,52 @@ export const NetworkPage: React.FC<NetworkPageProps> = ({
 
       </main>
 
-      {/* ================================================================= */}
-      {/* 3. RIGHT SIDEBAR WIDGETS (Trending Hashtags & Active Connections) */}
-      {/* ================================================================= */}
-      <aside className="hidden xl:flex flex-col w-80 border-l border-white/5 bg-[#080a0f] p-6 h-screen sticky top-0 space-y-6 overflow-y-auto shrink-0 select-none">
+      {/* 3. RIGHT SIDEBAR WIDGETS */}
+      <aside className="hidden xl:flex flex-col w-80 border-l border-border-default bg-canvas p-5 h-screen sticky top-0 space-y-4 overflow-y-auto shrink-0 select-none scrollbar-none">
         
-        {/* Trending Hashtags & Communities Widget */}
-        <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
-          <div className="flex items-center gap-2">
-            <Hash className="w-4 h-4 text-[#00f0ff]" />
-            <h3 className="text-sm font-bold text-white">Trending #Hashtags</h3>
-          </div>
+        {/* Trending Hashtags */}
+        <div className="bg-surface rounded-md p-4 border border-border-default space-y-3">
+          <h3 className="text-xs font-semibold text-text-primary tracking-wide">
+            Topik Populer
+          </h3>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {trendingHashtags.map((h, i) => (
               <div
                 key={i}
                 onClick={() => setSelectedHashtag(h.tag)}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-[#00f0ff]/10 hover:border-[#00f0ff]/30 border border-transparent transition-all cursor-pointer group"
+                className="flex items-center justify-between p-2.5 rounded-sm bg-surface-raised hover:bg-surface-raised/80 border border-border-default hover:border-border-strong transition-colors cursor-pointer group"
               >
                 <div>
-                  <span className="text-xs font-bold text-white group-hover:text-[#00f0ff] transition-colors block font-mono">
+                  <span className="text-xs font-mono font-semibold text-text-primary group-hover:text-accent transition-colors block">
                     {h.tag}
                   </span>
-                  <span className="text-[10px] text-gray-400">{h.postsCount}</span>
+                  <span className="text-[10px] text-text-secondary font-mono">{h.postsCount}</span>
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-gray-500 group-hover:text-[#00f0ff] transition-colors" />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Active Connections Widget */}
-        <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse" />
-            <h3 className="text-sm font-bold text-white">Active Connections</h3>
+        {/* Active Connections */}
+        <div className="bg-surface rounded-md p-4 border border-border-default space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-text-primary tracking-wide">
+              Koneksi Aktif
+            </h3>
+            <span className="w-2 h-2 rounded-full bg-diff-add" />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {activeConnections.map((conn, i) => (
-              <div key={i} className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
+              <div key={i} className="flex items-center gap-2.5 p-1.5 rounded-sm hover:bg-surface-raised transition-colors cursor-pointer">
                 <div className="relative">
-                  <img src={conn.avatar} alt={conn.name} className="w-9 h-9 rounded-xl object-cover border border-white/10" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#080a0f]" />
+                  <img src={conn.avatar} alt={conn.name} className="w-8 h-8 rounded-full object-cover border border-border-default aspect-square" />
+                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-diff-add border border-surface" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-xs font-bold text-white">{conn.name}</h4>
-                  <span className="text-[10px] text-emerald-400">Connected Online</span>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs font-semibold text-text-primary truncate">{conn.name}</h4>
+                  <span className="text-[10px] text-text-secondary font-mono block">{conn.handle}</span>
                 </div>
               </div>
             ))}

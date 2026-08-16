@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
+import { Sidebar } from '../../../components/Sidebar';
 import { 
-  LayoutDashboard, Network, MessageSquare, Compass, Settings, 
-  User, Plus, LogOut, Search, Film, Heart, MessageCircle, 
-  Sparkles, TrendingUp, Grid, Play
+  Search, Heart, MessageCircle, Sparkles, TrendingUp, Grid, Play, Hash, Film 
 } from 'lucide-react';
 
 interface ExplorePageProps {
@@ -14,8 +13,9 @@ interface ExplorePageProps {
   onNavigateToDashboard: () => void;
   onNavigateToNetwork: () => void;
   onNavigateToProfile: () => void;
-  onNavigateToMessages?: () => void;
-  onNavigateToReels?: () => void;
+  onNavigateToMessages: () => void;
+  onNavigateToReels: () => void;
+  onNavigateToSettings: () => void;
   onLogout: () => void;
 }
 
@@ -26,6 +26,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   onNavigateToProfile,
   onNavigateToMessages,
   onNavigateToReels,
+  onNavigateToSettings,
   onLogout,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,143 +116,49 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
   ];
 
   return (
-    <div className="w-full h-screen bg-[#07090e] text-white flex overflow-hidden font-body">
+    <div className="w-full h-screen bg-canvas text-text-primary flex overflow-hidden font-body select-none">
       
       {/* ================================================================= */}
-      {/* 1. LEFT SIDEBAR NAVIGATION (20% Widescreen Column)                */}
+      {/* 1. LEFT SIDEBAR NAVIGATION */}
       {/* ================================================================= */}
-      <aside className="hidden lg:flex flex-col justify-between w-64 h-screen border-r border-white/5 bg-[#080a0f] p-6 shrink-0 select-none">
-        <div className="space-y-6">
-          {/* Branding Header */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-              <div className="w-full h-full bg-[#080a0f] rounded-[10px] flex items-center justify-center font-extrabold text-white text-sm">
-                F
-              </div>
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-[#00f0ff] to-[#a855f7]">
-                FLUIDS
-              </h1>
-            </div>
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1.5">
-            <button
-              type="button"
-              onClick={onNavigateToDashboard}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer"
-            >
-              <LayoutDashboard className="w-5 h-5" />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToNetwork}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Network className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Network</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onNavigateToMessages}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-                <span>Messages</span>
-              </div>
-              <span className="w-2 h-2 rounded-full bg-[#9d00ff] shadow-[0_0_8px_#9d00ff]" />
-            </button>
-
-            {/* ACTIVE ITEM: EXPLORE (REPLACED ANALYTICS) */}
-            <a
-              href="#explore"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] font-bold text-sm shadow-[0_0_15px_rgba(0,240,255,0.15)]"
-            >
-              <Compass className="w-5 h-5 text-[#00f0ff]" />
-              <span>Explore</span>
-            </a>
-
-            <button
-              type="button"
-              onClick={onNavigateToReels}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <Film className="w-5 h-5 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Reels</span>
-            </button>
-
-            <a
-              href="#settings"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all"
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </a>
-
-            <button
-              type="button"
-              onClick={onNavigateToProfile}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 font-medium text-sm transition-all text-left cursor-pointer group"
-            >
-              <User className="w-5 h-5 text-gray-400 group-hover:text-[#00f0ff] transition-colors" />
-              <span>Profile</span>
-            </button>
-          </nav>
-
-          {/* Glowing Create Post CTA Button */}
-          <button
-            type="button"
-            className="w-full py-3.5 btn-neon-gradient flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-extrabold shadow-[0_0_20px_rgba(0,240,255,0.3)] cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[3]" />
-            <span>Create Post</span>
-          </button>
-        </div>
-
-        {/* Bottom Logout Button */}
-        <div className="space-y-1 border-t border-white/5 pt-4 mt-auto">
-          <button
-            type="button"
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/15 text-xs font-semibold transition-all text-left cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+      <Sidebar
+        activeView="explore"
+        user={user}
+        onNavigateToDashboard={onNavigateToDashboard}
+        onNavigateToNetwork={onNavigateToNetwork}
+        onNavigateToExplore={() => {}}
+        onNavigateToMessages={onNavigateToMessages}
+        onNavigateToReels={onNavigateToReels}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToSettings={onNavigateToSettings}
+        onLogout={onLogout}
+      />
 
       {/* ================================================================= */}
-      {/* 2. EXPLORE STREAM CONTENT (Instagram Explore Masonry Style)      */}
+      {/* 2. EXPLORE STREAM CONTENT */}
       {/* ================================================================= */}
-      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-8 space-y-6 max-w-5xl mx-auto">
+      <main className="flex-1 h-screen overflow-y-auto p-4 md:p-6 space-y-5 max-w-5xl mx-auto scrollbar-none">
         
         {/* Search Bar & Category Filter Bar */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search posts, reels, creators, or #hashtags (e.g. #teknologi)..."
-              className="w-full bg-[#0d1017] border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-white placeholder-gray-500 outline-none focus:border-[#00f0ff] focus:ring-1 focus:ring-[#00f0ff] transition-all shadow-lg"
+              placeholder="Cari postingan, repositori, developer, atau #tagar (misal #golang)..."
+              className="w-full bg-surface border border-border-default rounded-sm py-2.5 pl-10 pr-4 text-xs font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong transition-colors"
             />
           </div>
 
           {/* Categories Horizontal Selector */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
             {[
-              { id: 'for_you', label: 'For You', icon: Sparkles },
+              { id: 'for_you', label: 'Untuk Anda', icon: Sparkles },
               { id: 'trending', label: 'Trending', icon: TrendingUp },
-              { id: 'reels', label: 'Reels & Videos', icon: Film },
-              { id: 'cyberart', label: '#CyberArt', icon: Grid },
+              { id: 'reels', label: 'Reels & Video', icon: Film },
+              { id: 'cyberart', label: '#Arsitektur', icon: Grid },
             ].map((cat) => {
               const Icon = cat.icon;
               const isActive = activeCategory === cat.id;
@@ -260,10 +167,10 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id as any)}
-                  className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 shrink-0 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-sm font-mono font-semibold transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer ${
                     isActive
-                      ? 'bg-white/10 border border-[#00f0ff]/50 text-[#00f0ff] shadow-[0_0_15px_rgba(0,240,255,0.2)]'
-                      : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-accent-muted border border-accent/40 text-accent'
+                      : 'bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -274,44 +181,44 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
           </div>
         </div>
 
-        {/* Explore Clean 3-Column Uniform Grid (Persis Instagram Explore) */}
+        {/* Explore Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 pb-8">
           {exploreGridItems.map((item) => (
             <div
               key={item.id}
-              className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group cursor-pointer shadow-md bg-[#0d1017]"
+              className="relative aspect-square rounded-md overflow-hidden border border-border-default group cursor-pointer bg-surface"
             >
               {/* Media Image */}
               <img
                 src={item.img}
                 alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
 
               {/* Reel Video Indicator Badge */}
               {item.type === 'reel' && (
-                <div className="absolute top-3 right-3 p-1.5 rounded-xl bg-black/60 backdrop-blur-md text-white border border-white/10 shadow-md">
-                  <Play className="w-3.5 h-3.5 fill-white text-white" />
+                <div className="absolute top-2.5 right-2.5 p-1 rounded-sm bg-canvas/80 text-text-primary border border-border-default shadow-sm">
+                  <Play className="w-3 h-3 fill-text-primary text-text-primary" />
                 </div>
               )}
 
               {/* Hover Dark Overlay with Likes & Comments Count */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-4 text-white backdrop-blur-xs">
-                <span className="text-xs font-mono font-semibold text-[#00f0ff]">
+              <div className="absolute inset-0 bg-canvas/75 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3.5 text-text-primary">
+                <span className="text-xs font-mono font-semibold text-accent">
                   {item.author}
                 </span>
 
-                <div className="space-y-2">
-                  <p className="text-xs font-bold line-clamp-2">{item.title}</p>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold line-clamp-2">{item.title}</p>
                   
-                  <div className="flex items-center gap-4 text-xs font-bold pt-1">
-                    <span className="flex items-center gap-1.5">
-                      <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                      {item.likes}
+                  <div className="flex items-center gap-4 text-xs font-mono pt-1 text-text-secondary">
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-3.5 h-3.5 text-diff-remove fill-diff-remove" />
+                      <span>{item.likes}</span>
                     </span>
-                    <span className="flex items-center gap-1.5">
-                      <MessageCircle className="w-4 h-4 text-[#00f0ff]" />
-                      {item.comments}
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>{item.comments}</span>
                     </span>
                   </div>
                 </div>
@@ -319,8 +226,8 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({
             </div>
           ))}
         </div>
-
       </main>
+
     </div>
   );
 };

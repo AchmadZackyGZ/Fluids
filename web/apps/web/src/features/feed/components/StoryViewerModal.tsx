@@ -90,7 +90,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
       )}
 
       {/* Main Story Media Card */}
-      <div className="relative w-full max-w-sm h-[85vh] rounded-3xl overflow-hidden glass-panel-glow border border-white/10 flex flex-col justify-between shadow-2xl">
+      <div className="relative w-full max-w-sm h-[85vh] rounded-lg overflow-hidden bg-surface border border-border-default flex flex-col justify-between shadow-2xl">
         
         {/* Story Top Header Bar */}
         <div className="absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent space-y-3">
@@ -98,9 +98,9 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
           {/* Progress Bar Indicators */}
           <div className="flex gap-1.5 w-full">
             {stories.map((s, idx) => (
-              <div key={s.id} className="h-1 flex-1 bg-white/30 rounded-full overflow-hidden">
+              <div key={s.id} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#00f0ff] transition-all duration-100 ease-linear shadow-[0_0_8px_#00f0ff]"
+                  className="h-full bg-accent transition-all duration-100 ease-linear"
                   style={{
                     width:
                       idx === currentIndex
@@ -120,18 +120,18 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
               <img
                 src={currentStory.userAvatar}
                 alt={currentStory.userName}
-                className="w-9 h-9 rounded-xl object-cover border border-[#00f0ff]"
+                className="w-9 h-9 rounded-full object-cover border border-border-default aspect-square"
               />
               <div>
-                <span className="text-xs font-bold text-white block">{currentStory.userName}</span>
-                <span className="text-[10px] text-gray-300 font-mono">{currentStory.timeAgo}</span>
+                <span className="text-xs font-semibold text-text-primary block">{currentStory.userName}</span>
+                <span className="text-[10px] text-text-secondary font-mono">{currentStory.timeAgo}</span>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setIsMuted(!isMuted)}
-              className="text-white/80 hover:text-white"
+              className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
@@ -154,7 +154,7 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
 
           {/* Caption Overlay */}
           {currentStory.caption && (
-            <div className="absolute bottom-16 left-4 right-4 z-20 bg-black/60 backdrop-blur-md p-3 rounded-2xl border border-white/10 text-xs text-white">
+            <div className="absolute bottom-16 left-4 right-4 z-20 bg-surface/90 backdrop-blur-md p-3 rounded-sm border border-border-default text-xs font-mono text-text-primary">
               {currentStory.caption}
             </div>
           )}
@@ -167,24 +167,24 @@ export const StoryViewerModal: React.FC<StoryViewerModalProps> = ({
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
             placeholder={`Reply to ${currentStory.userName}...`}
-            className="flex-1 bg-white/10 border border-white/20 rounded-full px-4 py-2 text-xs text-white placeholder-gray-400 outline-none focus:border-[#00f0ff]"
+            className="flex-1 bg-surface-raised/90 border border-border-default rounded-sm px-3.5 py-2 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent font-mono transition-colors"
           />
 
           <button
             type="button"
             onClick={() => setIsLiked(!isLiked)}
-            className={`p-2 rounded-full transition-all ${
-              isLiked ? 'text-red-500 bg-red-500/20' : 'text-white/80 hover:text-white bg-white/10'
+            className={`p-2 rounded-sm transition-colors cursor-pointer ${
+              isLiked ? 'text-diff-remove bg-surface-raised' : 'text-text-secondary hover:text-text-primary bg-surface-raised/80'
             }`}
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500' : ''}`} />
+            <Heart className={`w-4 h-4 ${isLiked ? 'fill-diff-remove' : ''}`} />
           </button>
 
           {replyText && (
             <button
               type="button"
               onClick={() => setReplyText('')}
-              className="p-2 rounded-full btn-neon-gradient text-black"
+              className="p-2 rounded-sm bg-accent hover:bg-accent-hover text-canvas transition-colors cursor-pointer"
             >
               <Send className="w-4 h-4" />
             </button>
