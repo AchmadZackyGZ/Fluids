@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Sparkles, User, Camera, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Check, Sparkles, ShieldCheck } from 'lucide-react';
+import { ImageUploadDropzone } from '../../../components/ui/ImageUploadDropzone';
 
 interface OnboardingModalProps {
   fullName: string;
@@ -18,8 +19,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ fullName, user
     'Music Production', '3D Graphics', 'Software Arch'
   ];
 
-  const initialLetter = fullName ? fullName.charAt(0).toUpperCase() : 'U';
-
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
       setSelectedInterests(selectedInterests.filter((i) => i !== interest));
@@ -37,28 +36,34 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ fullName, user
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-      <div className="w-full max-w-xl glass-panel-glow rounded-2xl p-6 md:p-8 border border-white/10 relative overflow-hidden shadow-2xl animate-float">
-        {/* Top Gradient Line */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#00f0ff] via-[#a855f7] to-[#00f0ff]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-canvas/80 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-surface rounded-lg p-6 border border-border-default relative overflow-hidden shadow-2xl space-y-5">
+        
+        {/* Top Accent Indicator */}
+        <div className="flex items-center justify-between border-b border-border-default pb-3">
+          <div className="flex items-center gap-2 text-xs font-mono text-text-secondary">
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
+            <span>FLUIDS SETUP</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${step === 1 ? 'bg-accent' : 'bg-border-strong'}`} />
+            <span className={`w-2 h-2 rounded-full ${step === 2 ? 'bg-accent' : 'bg-border-strong'}`} />
+          </div>
+        </div>
 
-        {/* STEP 1: WELCOME & INTEREST QUESTIONNAIRE */}
-        {step === 1 && (
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00f0ff]/10 border border-[#00f0ff]/30 text-[#00f0ff] text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" /> Welcome to FLUIDS
-              </div>
-              <h2 className="text-2xl font-extrabold text-white">
-                Greetings, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#a855f7]">{fullName}</span>!
+        {/* STEP 1: Choose Interests */}
+        {step === 1 ? (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-lg font-bold text-text-primary font-display">
+                Pilih Topik Minat Anda
               </h2>
-              <p className="text-xs text-gray-400">
-                Customize your neural feed vector by selecting your core interests.
+              <p className="text-xs text-text-secondary font-mono">
+                Bantu algoritma menyajikan feed developer yang relevan untuk Anda.
               </p>
             </div>
 
-            {/* Interest Tags */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-6">
+            <div className="flex flex-wrap gap-2 pt-1">
               {interestsList.map((interest) => {
                 const isSelected = selectedInterests.includes(interest);
                 return (
@@ -66,101 +71,84 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ fullName, user
                     key={interest}
                     type="button"
                     onClick={() => toggleInterest(interest)}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all border ${
+                    className={`px-3 py-1.5 rounded-sm border text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? 'bg-[#00f0ff]/15 border-[#00f0ff] text-white shadow-[0_0_12px_rgba(0,240,255,0.25)]'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                        ? 'bg-accent-muted border-accent text-accent'
+                        : 'bg-surface-raised border-border-default text-text-secondary hover:text-text-primary hover:border-border-strong'
                     }`}
                   >
+                    {isSelected && <Check className="w-3 h-3 text-accent" />}
                     <span>{interest}</span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#00f0ff]" />}
                   </button>
                 );
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="w-full py-3.5 btn-neon-gradient flex items-center justify-center gap-2 text-xs uppercase tracking-wider font-bold"
-            >
-              <span>Next: Setup Profile (Optional)</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="w-full py-2.5 rounded-sm bg-accent hover:bg-accent-hover text-canvas font-semibold text-xs font-mono flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <span>Lanjutkan</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* STEP 2: PROFILE SETUP (OPTIONAL WITH SKIP BUTTON) */}
-        {step === 2 && (
-          <div className="space-y-6">
-            <div className="text-center space-y-1">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                <ShieldCheck className="w-4 h-4 text-[#00f0ff]" /> Step 2 of 2 • Optional
+        ) : (
+          /* STEP 2: Profile Picture & Bio */
+          <div className="space-y-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-mono text-text-secondary">
+                <ShieldCheck className="w-3.5 h-3.5 text-accent" /> Langkah 2 dari 2 • Opsional
               </div>
-              <h2 className="text-xl font-extrabold text-white">
-                Set Your Avatar & Bio
+              <h2 className="text-lg font-bold text-text-primary font-display">
+                Atur Foto Profil & Bio
               </h2>
-              <p className="text-xs text-gray-400">
-                You can complete this now or skip for your default initial avatar.
+              <p className="text-xs text-text-secondary font-mono">
+                Anda bisa melengkapinya sekarang atau melewatinya dulu.
               </p>
             </div>
 
-            {/* Avatar Preview */}
-            <div className="flex flex-col items-center justify-center my-4">
-              <div className="relative group cursor-pointer">
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt={fullName}
-                    className="w-24 h-24 rounded-full object-cover border-2 border-[#00f0ff] shadow-[0_0_20px_rgba(0,240,255,0.4)]"
-                  />
-                ) : (
-                  /* Initial Avatar Fallback */
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#00f0ff] to-[#9d00ff] p-0.5 shadow-[0_0_25px_rgba(0,240,255,0.4)]">
-                    <div className="w-full h-full rounded-full bg-[#080a0f] flex items-center justify-center text-3xl font-extrabold text-white">
-                      {initialLetter}
-                    </div>
-                  </div>
-                )}
-                <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <span className="text-[11px] text-gray-400 mt-2 font-mono">
-                @{username}
-              </span>
-            </div>
+            {/* Avatar Upload Dropzone */}
+            <ImageUploadDropzone
+              label="Avatar Foto Profil"
+              value={avatarUrl}
+              onChange={setAvatarUrl}
+              placeholder="https://images.unsplash.com/photo-..."
+              helpText="PNG, JPG, GIF, WebP hingga 10MB"
+            />
 
             {/* Bio Input */}
             <div>
-              <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                Bio / Status (Optional)
+              <label className="block text-[11px] font-medium text-text-secondary font-mono mb-1">
+                Bio / Status Developer
               </label>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Share your fluid bio or tagline..."
+                placeholder="misal: Backend Engineer @ Tech. Go, Docker, PostgreSQL..."
                 rows={2}
-                className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#00f0ff] focus:ring-1 focus:ring-[#00f0ff] resize-none"
+                className="w-full bg-surface-raised border border-border-default rounded-sm p-2 text-xs font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong resize-none"
               />
             </div>
 
             {/* Actions: Skip vs Save */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={handleSkip}
-                className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 text-xs font-bold transition-all uppercase tracking-wider"
+                className="flex-1 py-2 rounded-sm bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary text-xs font-medium font-mono transition-colors cursor-pointer"
               >
-                Skip For Now (Lewati)
+                Lewati Dulu
               </button>
 
               <button
                 type="button"
                 onClick={handleSubmitProfile}
-                className="flex-1 py-3 btn-neon-gradient text-xs uppercase tracking-wider font-bold"
+                className="flex-1 py-2 bg-accent hover:bg-accent-hover text-canvas rounded-sm text-xs font-semibold tracking-wide transition-colors cursor-pointer"
               >
-                Save & Continue
+                Simpan & Masuk
               </button>
             </div>
           </div>

@@ -3,16 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --bg-dark: #080a0f;
-  --bg-card: rgba(15, 18, 26, 0.75);
-  --bg-card-hover: rgba(22, 27, 38, 0.85);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-neon: rgba(0, 240, 255, 0.3);
-  --neon-cyan: #00f0ff;
-  --neon-purple: #9d00ff;
-  --text-main: #f3f4f6;
-  --text-muted: #9ca3af;
-  --font-heading: 'Outfit', sans-serif;
+  /* FLUIDS Design Tokens (source: .agents/rules/design-tokens.md) */
+  --bg-canvas: #0D0E10;
+  --bg-surface: #17181B;
+  --bg-surface-raised: #1F2023;
+  --border-default: #2A2B2F;
+  --border-strong: #3A3B40;
+  --text-primary: #EDEDEF;
+  --text-secondary: #9A9AA2;
+  --text-muted: #5F5F66;
+  --accent: #E8A33D;
+  --accent-muted: #3D3115;
+  --diff-add: #3FB68B;
+  --diff-remove: #D9645A;
+
+  /* Legacy & Layout variables */
+  --bg-dark: var(--bg-canvas);
+  --bg-card: var(--bg-surface);
+  --bg-card-hover: var(--bg-surface-raised);
+  --border-glass: var(--border-default);
+  --border-neon: var(--border-strong);
+  --neon-cyan: var(--accent);
+  --neon-purple: var(--accent);
+  --text-main: var(--text-primary);
+  --font-heading: 'Inter Tight', 'Outfit', sans-serif;
   --font-body: 'Inter', sans-serif;
 }
 
@@ -21,8 +35,8 @@
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-main);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
   font-family: var(--font-body);
   min-height: 100vh;
   overflow-x: hidden;
@@ -40,17 +54,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #07090e;
+  background: var(--bg-canvas);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--border-default);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00f0ff;
-  box-shadow: 0 0 10px #00f0ff;
+  background: var(--border-strong);
 }
 
 .scrollbar-none::-webkit-scrollbar {
@@ -61,73 +74,82 @@ h1, h2, h3, h4, h5, h6 {
   scrollbar-width: none;
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism / Surface Panels */
 .glass-panel {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-glass);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
 }
 
 .glass-panel-glow {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-neon);
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-strong);
 }
 
-/* Neon Gradient Buttons */
-.btn-neon-gradient {
-  background: linear-gradient(135deg, #00f0ff 0%, #a855f7 100%);
-  color: #000000;
-  font-weight: 700;
-  font-family: var(--font-heading);
-  border: none;
-  border-radius: 8px;
+/* Solid Amber Accent Buttons (Design Tokens Standard) */
+.btn-accent {
+  background-color: var(--accent);
+  color: #0D0E10;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  transition: background-color 150ms ease;
+  box-shadow: none;
+}
+
+.btn-accent:hover {
+  background-color: #d49332;
+}
+
+.btn-neon-gradient {
+  background-color: var(--accent);
+  color: #0D0E10;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  box-shadow: none;
 }
 
 .btn-neon-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.5);
-  opacity: 0.95;
+  background-color: #d49332;
+  box-shadow: none;
+  transform: none;
 }
 
 .btn-neon-gradient:active {
-  transform: translateY(0);
+  transform: none;
 }
 
 /* Input Fields */
 .input-field {
   width: 100%;
-  background: rgba(13, 16, 23, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  padding: 12px 16px 12px 42px;
-  color: #ffffff;
-  font-size: 14px;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 10px 14px 10px 38px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
   outline: none;
-  transition: all 0.2s ease;
+  transition: border-color 0.15s ease;
 }
 
 .input-field:focus {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
-  background: rgba(18, 23, 33, 0.9);
+  border-color: var(--border-strong);
+  box-shadow: none;
+  background: var(--bg-surface-raised);
 }
 
 .input-field::placeholder {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 /* Animations */
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes pulseGlow {
@@ -135,12 +157,17 @@ h1, h2, h3, h4, h5, h6 {
   50% { opacity: 0.8; }
 }
 
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .animate-float {
-  animation: floatSlow 6s ease-in-out infinite;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .animate-float-delayed {
-  animation: floatSlow 7s ease-in-out 2s infinite;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .animate-pulse-glow {

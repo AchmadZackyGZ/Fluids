@@ -6,9 +6,12 @@ import { DashboardPage } from '../features/feed/pages/DashboardPage';
 import { ProfilePage } from '../features/profile/pages/ProfilePage';
 import { NetworkPage } from '../features/network/pages/NetworkPage';
 import { ExplorePage } from '../features/explore/pages/ExplorePage';
+import { MessagesPage } from '../features/messages/pages/MessagesPage';
+import { ReelsPage } from '../features/reels/pages/ReelsPage';
+import { SettingsPage } from '../features/settings/pages/SettingsPage';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore'>('auth');
+  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore' | 'messages' | 'reels' | 'settings'>('auth');
   const [isInitializing, setIsInitializing] = useState(true);
 
   const [user, setUser] = useState<{
@@ -125,16 +128,28 @@ export const App: React.FC = () => {
     }
   };
 
+  const [viewingProfileUser, setViewingProfileUser] = useState<any | null>(null);
+
+  const handleNavigateToProfile = (targetUser?: any) => {
+    if (targetUser && targetUser.username && targetUser.username !== user.username) {
+      setViewingProfileUser(targetUser);
+    } else {
+      setViewingProfileUser(null);
+    }
+    setView('profile');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('fluids_token');
     setWelcomeToast(undefined);
+    setViewingProfileUser(null);
     setView('auth');
   };
 
   if (isInitializing) {
     return (
-      <div className="w-full min-h-screen bg-[#07090e] flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#00f0ff] border-t-transparent animate-spin" />
+      <div className="w-full min-h-screen bg-canvas flex items-center justify-center">
+        <div className="w-7 h-7 rounded-full border-2 border-accent border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -167,9 +182,12 @@ export const App: React.FC = () => {
         <DashboardPage
           user={user}
           welcomeToast={welcomeToast}
-          onNavigateToProfile={() => setView('profile')}
+          onNavigateToProfile={handleNavigateToProfile}
           onNavigateToNetwork={() => setView('network')}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
           onLogout={handleLogout}
         />
       )}
@@ -177,9 +195,14 @@ export const App: React.FC = () => {
       {view === 'profile' && (
         <ProfilePage
           user={user}
+          viewingUser={viewingProfileUser}
           onNavigateToDashboard={() => setView('dashboard')}
           onNavigateToNetwork={() => setView('network')}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
           onUpdateProfile={handleUpdateProfile}
           onLogout={handleLogout}
         />
@@ -189,8 +212,11 @@ export const App: React.FC = () => {
         <NetworkPage
           user={user}
           onNavigateToDashboard={() => setView('dashboard')}
-          onNavigateToProfile={() => setView('profile')}
+          onNavigateToProfile={handleNavigateToProfile}
           onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
           onLogout={handleLogout}
         />
       )}
@@ -200,7 +226,50 @@ export const App: React.FC = () => {
           user={user}
           onNavigateToDashboard={() => setView('dashboard')}
           onNavigateToNetwork={() => setView('network')}
-          onNavigateToProfile={() => setView('profile')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'messages' && (
+        <MessagesPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'reels' && (
+        <ReelsPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'settings' && (
+        <SettingsPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
           onLogout={handleLogout}
         />
       )}

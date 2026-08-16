@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Image, MessageSquare, Plus, CheckCircle2 } from 'lucide-react';
+import { X, MessageSquare } from 'lucide-react';
+import { ImageUploadDropzone } from '../../../components/ui/ImageUploadDropzone';
 
 interface AddStoryModalProps {
   user: {
@@ -24,7 +25,7 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({ user, onClose, onA
       onAddStory({
         mediaUrl: mediaUrl || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600',
         caption,
-        note: note || 'Cyber Status...',
+        note: note || 'Developer Status...',
       });
       setIsPosting(false);
       onClose();
@@ -32,89 +33,82 @@ export const AddStoryModal: React.FC<AddStoryModalProps> = ({ user, onClose, onA
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-      <div className="w-full max-w-md glass-panel-glow rounded-3xl p-6 border border-white/10 relative overflow-hidden shadow-2xl animate-float">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-canvas/80 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-surface rounded-lg p-6 border border-border-default relative overflow-hidden shadow-2xl space-y-4">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-          <h2 className="text-base font-bold text-white tracking-wide">Add New Story / Node</h2>
+        <div className="flex items-center justify-between border-b border-border-default pb-3">
+          <h2 className="text-sm font-semibold text-text-primary tracking-wide font-mono">Tambah Story / Catatan</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           
           {/* Note Bubble (Catatan Status) */}
           <div>
-            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-              Avatar Note Bubble (Catatan Status Profil)
+            <label className="block text-[11px] font-medium text-text-secondary font-mono mb-1">
+              Catatan Status Profil
             </label>
             <div className="relative">
-              <MessageSquare className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="misal: 'Coding late night...'"
+                placeholder="misal: 'Debugging memory leak...'"
                 maxLength={30}
-                className="input-field"
+                className="w-full bg-surface-raised border border-border-default rounded-sm py-1.5 pl-8 pr-3 text-xs font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong"
               />
             </div>
           </div>
 
-          {/* Story Image URL */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-              Story Media URL (Foto / Video)
-            </label>
-            <div className="relative">
-              <Image className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="url"
-                value={mediaUrl}
-                onChange={(e) => setMediaUrl(e.target.value)}
-                placeholder="https://images.unsplash.com/photo-..."
-                className="input-field"
-              />
-            </div>
-          </div>
+          {/* Story Image Upload Dropzone */}
+          <ImageUploadDropzone
+            label="Story Media (Foto)"
+            value={mediaUrl}
+            onChange={setMediaUrl}
+            placeholder="https://images.unsplash.com/photo-..."
+            helpText="PNG, JPG, GIF, WebP hingga 10MB"
+          />
 
           {/* Caption */}
           <div>
-            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-              Story Caption / Teks (Opsional)
+            <label className="block text-[11px] font-medium text-text-secondary font-mono mb-1">
+              Caption (Opsional)
             </label>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               rows={2}
-              placeholder="What's happening in your node?"
-              className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-[#00f0ff] resize-none"
+              placeholder="Ceritakan proyek atau snippet hari ini..."
+              className="w-full bg-surface-raised border border-border-default rounded-sm p-2 text-xs font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-border-strong resize-none"
             />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 pt-3">
+          <div className="flex items-center gap-2.5 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-xs font-bold uppercase tracking-wider"
+              className="flex-1 py-2 rounded-sm bg-surface-raised border border-border-default hover:border-border-strong text-text-secondary hover:text-text-primary text-xs font-medium font-mono transition-colors cursor-pointer"
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               disabled={isPosting}
-              className="flex-1 py-3 btn-neon-gradient text-xs uppercase tracking-wider font-bold"
+              className="flex-1 py-2 rounded-sm bg-accent hover:bg-accent-hover text-canvas text-xs font-semibold font-mono tracking-wide transition-colors cursor-pointer disabled:opacity-50"
             >
-              {isPosting ? 'Publishing...' : 'Share Story'}
+              {isPosting ? 'Mengupload...' : 'Bagikan Story'}
             </button>
           </div>
+
         </form>
 
       </div>
