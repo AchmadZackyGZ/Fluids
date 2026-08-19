@@ -6,24 +6,28 @@ import (
 
 	userContract "github.com/AchmadZackyGZ/fluids/server/internal/modules/user/contracts"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/security"
+	"github.com/AchmadZackyGZ/fluids/server/internal/platform/validator"
 )
 
 type RegisterReq struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	FullName string `json:"full_name"`
+	Username string `json:"username" validate:"required,alphanum,min=3,max=50"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
+	FullName string `json:"full_name" validate:"required,min=2,max=100"`
 }
 
 type LoginReq struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type AuthResponse struct {
 	Token string                `json:"token"`
 	User  *userContract.UserDTO `json:"user"`
 }
+
+// Sentinel Error khusus Auth Service (Login Gagal)
+var ErrInvalidCredentials = errors.New("invalid email or password")
 
 type AuthService interface {
 	Register(ctx context.Context, req RegisterReq) (*AuthResponse, error)
@@ -39,8 +43,14 @@ func NewAuthService(userContract userContract.UserContract) AuthService {
 }
 
 func (s *authService) Register(ctx context.Context, req RegisterReq) (*AuthResponse, error) {
-	if req.Email == "" || req.Password == "" || req.Username == "" || req.FullName == "" {
-		return nil, errors.New("all fields are required")
+	// if req.Email == "" || req.Password == "" || req.Username == "" || req.FullName == "" {
+	// 	return nil, errors.New("all fields are required")
+	// }
+	// ini kode awalnya tanpa validator handle error
+
+	// Validasi struct input (dikembalikan mentah jika gagal, handler yang akan mengurai)versi menggunakan validator lebih clean code
+	if err := validator.Validate.Struct(req); err != nil {
+		return nil, err
 	}
 
 	hashedPassword, err := security.HashPassword(req.Password)
@@ -55,6 +65,7 @@ func (s *authService) Register(ctx context.Context, req RegisterReq) (*AuthRespo
 		FullName:     req.FullName,
 	})
 	if err != nil {
+		// Diteruskan apa adanya (misal ErrEmailAlreadyExists / ErrUsernameAlreadyExists)
 		return nil, err
 	}
 
@@ -70,17 +81,22 @@ func (s *authService) Register(ctx context.Context, req RegisterReq) (*AuthRespo
 }
 
 func (s *authService) Login(ctx context.Context, req LoginReq) (*AuthResponse, error) {
-	if req.Email == "" || req.Password == "" {
-		return nil, errors.New("email and password are required")
+	// Validasi struct input
+	if err := validator.Validate.Struct(req); err != nil {
+		return nil, err
 	}
 
 	u, err := s.userContract.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, errors.New("invalid email or password")
+		if errors.Is(err, userContract.ErrUserNotFound) {
+			// Samarkan error menjadi ErrInvalidCredentials (OWASP Standard)
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
 	}
 
 	if !security.CheckPasswordHash(req.Password, u.PasswordHash) {
-		return nil, errors.New("invalid email or password")
+		return nil, ErrInvalidCredentials
 	}
 
 	token, err := security.GenerateToken(u.ID, u.Email, u.Username)

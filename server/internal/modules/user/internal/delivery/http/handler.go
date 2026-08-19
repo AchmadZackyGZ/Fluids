@@ -1,8 +1,10 @@
 package http
 
 import (
+	"errors"
 	"net/http"
 
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/contracts"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/internal/service"
 	"github.com/labstack/echo/v4"
 )
@@ -23,7 +25,15 @@ func (h *UserHandler) GetMe(c echo.Context) error {
 
 	user, err := h.svc.GetUserByID(c.Request().Context(), userID)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, map[string]string{"error": "user not found"})
+		if errors.Is(err, contracts.ErrUserNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "user not found",
+			})
+		}
+		c.Logger().Error(err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "internal server error",
+		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
