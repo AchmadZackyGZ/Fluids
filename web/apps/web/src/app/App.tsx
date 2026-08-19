@@ -1,0 +1,280 @@
+import React, { useState, useEffect } from 'react';
+import { AuthPage } from '../features/auth/pages/AuthPage';
+import { RocketLoadingScreen } from '../features/auth/components/RocketLoadingScreen';
+import { OnboardingModal } from '../features/auth/components/OnboardingModal';
+import { DashboardPage } from '../features/feed/pages/DashboardPage';
+import { ProfilePage } from '../features/profile/pages/ProfilePage';
+import { NetworkPage } from '../features/network/pages/NetworkPage';
+import { ExplorePage } from '../features/explore/pages/ExplorePage';
+import { MessagesPage } from '../features/messages/pages/MessagesPage';
+import { ReelsPage } from '../features/reels/pages/ReelsPage';
+import { SettingsPage } from '../features/settings/pages/SettingsPage';
+
+export const App: React.FC = () => {
+  const [view, setView] = useState<'auth' | 'rocket_loading' | 'onboarding_modal' | 'dashboard' | 'profile' | 'network' | 'explore' | 'messages' | 'reels' | 'settings'>('auth');
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  const [user, setUser] = useState<{
+    id?: string;
+    username?: string;
+    email?: string;
+    fullName?: string;
+    avatarUrl?: string;
+    bio?: string;
+  }>({
+    fullName: 'Achmad Zacky',
+    username: 'achmadzacky',
+    email: 'zacky@fluids.com',
+    avatarUrl: '',
+    bio: '',
+  });
+
+  const [welcomeToast, setWelcomeToast] = useState<string | undefined>(undefined);
+
+  // Restore authenticated session on page reload (F5)
+  useEffect(() => {
+    const token = localStorage.getItem('fluids_token');
+    if (token) {
+      fetch('/api/v1/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.data) {
+            setUser({
+              id: data.data.id,
+              username: data.data.username,
+              email: data.data.email,
+              fullName: data.data.full_name,
+              avatarUrl: data.data.avatar_url,
+              bio: data.data.bio,
+            });
+            setView('dashboard');
+          } else {
+            localStorage.removeItem('fluids_token');
+            setView('auth');
+          }
+        })
+        .catch(() => {
+          // If offline or dev mode, restore session if token exists
+          setView('dashboard');
+        })
+        .finally(() => {
+          setIsInitializing(false);
+        });
+    } else {
+      setIsInitializing(false);
+    }
+  }, []);
+
+  // Triggered when user completes Registration
+  const handleRegisterSuccess = (userData: { fullName: string; username: string; email: string }) => {
+    setUser((prev) => ({ ...prev, ...userData }));
+    setView('rocket_loading');
+  };
+
+  // Triggered when user completes Login (Returning user)
+  const handleLoginSuccess = (userData: { fullName: string; username: string; email: string }) => {
+    setUser((prev) => ({ ...prev, ...userData }));
+    setWelcomeToast(`Welcome back, @${userData.username || 'user'}!`);
+    setView('dashboard');
+  };
+
+  // Triggered after Rocket Animation finishes
+  const handleRocketComplete = () => {
+    setView('onboarding_modal');
+  };
+
+  // Triggered after Onboarding Questionnaire / Skip
+  const handleOnboardingFinish = (profileData?: { bio: string; avatarUrl: string }) => {
+    if (profileData) {
+      setUser((prev) => ({
+        ...prev,
+        bio: profileData.bio || prev.bio,
+        avatarUrl: profileData.avatarUrl || prev.avatarUrl,
+      }));
+    }
+    setView('dashboard');
+  };
+
+  // Triggered when user updates profile in Edit Profile Modal
+  const handleUpdateProfile = (updatedData: { fullName: string; username: string; bio: string; avatarUrl: string }) => {
+    setUser((prev) => ({
+      ...prev,
+      fullName: updatedData.fullName,
+      username: updatedData.username,
+      bio: updatedData.bio,
+      avatarUrl: updatedData.avatarUrl,
+    }));
+
+    // Sync with backend API if token exists
+    const token = localStorage.getItem('fluids_token');
+    if (token) {
+      fetch('/api/v1/users/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          full_name: updatedData.fullName,
+          username: updatedData.username,
+          bio: updatedData.bio,
+          avatar_url: updatedData.avatarUrl,
+        }),
+      }).catch(() => {});
+    }
+  };
+
+  const [viewingProfileUser, setViewingProfileUser] = useState<any | null>(null);
+
+  const handleNavigateToProfile = (targetUser?: any) => {
+    if (targetUser && targetUser.username && targetUser.username !== user.username) {
+      setViewingProfileUser(targetUser);
+    } else {
+      setViewingProfileUser(null);
+    }
+    setView('profile');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('fluids_token');
+    setWelcomeToast(undefined);
+    setViewingProfileUser(null);
+    setView('auth');
+  };
+
+  if (isInitializing) {
+    return (
+      <div className="w-full min-h-screen bg-canvas flex items-center justify-center">
+        <div className="w-7 h-7 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {view === 'auth' && (
+        <AuthPage 
+          onRegisterSuccess={handleRegisterSuccess}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+
+      {view === 'rocket_loading' && (
+        <RocketLoadingScreen 
+          userName={user.fullName}
+          onComplete={handleRocketComplete} 
+        />
+      )}
+
+      {view === 'onboarding_modal' && (
+        <OnboardingModal
+          fullName={user.fullName || 'User'}
+          username={user.username || 'fluid_user'}
+          onFinish={handleOnboardingFinish}
+        />
+      )}
+
+      {view === 'dashboard' && (
+        <DashboardPage
+          user={user}
+          welcomeToast={welcomeToast}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'profile' && (
+        <ProfilePage
+          user={user}
+          viewingUser={viewingProfileUser}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
+          onUpdateProfile={handleUpdateProfile}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'network' && (
+        <NetworkPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'explore' && (
+        <ExplorePage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'messages' && (
+        <MessagesPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'reels' && (
+        <ReelsPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+
+      {view === 'settings' && (
+        <SettingsPage
+          user={user}
+          onNavigateToDashboard={() => setView('dashboard')}
+          onNavigateToNetwork={() => setView('network')}
+          onNavigateToExplore={() => setView('explore')}
+          onNavigateToMessages={() => setView('messages')}
+          onNavigateToReels={() => setView('reels')}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSettings={() => setView('settings')}
+          onLogout={handleLogout}
+        />
+      )}
+    </>
+  );
+};
+
+export default App;

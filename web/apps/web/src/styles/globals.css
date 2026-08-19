@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* FLUIDS Design Tokens (source: .agents/rules/design-tokens.md) */
+  --bg-canvas: #0D0E10;
+  --bg-surface: #17181B;
+  --bg-surface-raised: #1F2023;
+  --border-default: #2A2B2F;
+  --border-strong: #3A3B40;
+  --text-primary: #EDEDEF;
+  --text-secondary: #9A9AA2;
+  --text-muted: #5F5F66;
+  --accent: #E8A33D;
+  --accent-muted: #3D3115;
+  --diff-add: #3FB68B;
+  --diff-remove: #D9645A;
+
+  /* Legacy & Layout variables */
+  --bg-dark: var(--bg-canvas);
+  --bg-card: var(--bg-surface);
+  --bg-card-hover: var(--bg-surface-raised);
+  --border-glass: var(--border-default);
+  --border-neon: var(--border-strong);
+  --neon-cyan: var(--accent);
+  --neon-purple: var(--accent);
+  --text-main: var(--text-primary);
+  --font-heading: 'Inter Tight', 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+/* Custom Futuristic Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphism / Surface Panels */
+.glass-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+}
+
+.glass-panel-glow {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-strong);
+}
+
+/* Solid Amber Accent Buttons (Design Tokens Standard) */
+.btn-accent {
+  background-color: var(--accent);
+  color: #0D0E10;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  box-shadow: none;
+}
+
+.btn-accent:hover {
+  background-color: #d49332;
+}
+
+.btn-neon-gradient {
+  background-color: var(--accent);
+  color: #0D0E10;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+  box-shadow: none;
+}
+
+.btn-neon-gradient:hover {
+  background-color: #d49332;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-neon-gradient:active {
+  transform: none;
+}
+
+/* Input Fields */
+.input-field {
+  width: 100%;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 10px 14px 10px 38px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-field:focus {
+  border-color: var(--border-strong);
+  box-shadow: none;
+  background: var(--bg-surface-raised);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-float {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-float-delayed {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
