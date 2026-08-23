@@ -8,6 +8,7 @@ import (
 	"go.uber.org/fx"
 
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/auth"
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/content"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/reco"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/database"
@@ -40,6 +41,7 @@ func main() {
 		reco.Module,
 		user.Module,
 		auth.Module,
+		content.Module,
 
 		// 4. Lifecycle Hook: Menyalakan & Mematikan Server secara Graceful
 		fx.Invoke(func(lc fx.Lifecycle, e *echo.Echo) {

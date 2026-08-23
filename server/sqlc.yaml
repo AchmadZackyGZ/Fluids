@@ -22,3 +22,12 @@ sql:
         package: "gen"
         out: "internal/modules/user/internal/repository/gen"
         sql_package: "pgx/v5"
+
+  - engine: "postgresql"
+    schema: "internal/modules/content/internal/migrations"
+    queries: "internal/modules/content/internal/repository/queries"
+    gen:
+      go:
+        package: "gen"
+        out: "internal/modules/content/internal/repository/gen"
+        sql_package: "pgx/v5"
