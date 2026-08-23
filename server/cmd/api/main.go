@@ -10,6 +10,7 @@ import (
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/auth"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/content"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/reco"
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/social"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/database"
 )
@@ -42,6 +43,7 @@ func main() {
 		user.Module,
 		auth.Module,
 		content.Module,
+		social.Module,
 
 		// 4. Lifecycle Hook: Menyalakan & Mematikan Server secara Graceful
 		fx.Invoke(func(lc fx.Lifecycle, e *echo.Echo) {
