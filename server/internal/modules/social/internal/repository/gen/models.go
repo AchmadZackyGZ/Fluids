@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Bookmark struct {
+	UserID    pgtype.UUID
+	PostID    pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+type Follow struct {
+	FollowerID  pgtype.UUID
+	FollowingID pgtype.UUID
+	CreatedAt   pgtype.Timestamptz
+}
+
 type Post struct {
 	ID            pgtype.UUID
 	AuthorID      pgtype.UUID
@@ -39,13 +51,14 @@ type PostMedium struct {
 }
 
 type User struct {
-	ID           pgtype.UUID
-	Username     string
-	Email        string
-	PasswordHash string
-	FullName     string
-	Bio          string
-	AvatarUrl    string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	ID             pgtype.UUID
+	Username       string
+	Email          string
+	PasswordHash   string
+	FullName       string
+	Bio            string
+	AvatarUrl      string
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	GithubUsername string
 }

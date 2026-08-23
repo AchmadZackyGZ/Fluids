@@ -1,7 +1,10 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    schema: "internal/modules/reco/internal/migrations"
+    schema:
+      - "internal/modules/user/internal/migrations"
+      - "internal/modules/content/internal/migrations"
+      - "internal/modules/reco/internal/migrations"
     queries: "internal/modules/reco/internal/repository/queries"
     gen:
       go:
@@ -24,10 +27,24 @@ sql:
         sql_package: "pgx/v5"
 
   - engine: "postgresql"
-    schema: "internal/modules/content/internal/migrations"
+    schema:
+      - "internal/modules/user/internal/migrations"
+      - "internal/modules/content/internal/migrations"
     queries: "internal/modules/content/internal/repository/queries"
     gen:
       go:
         package: "gen"
         out: "internal/modules/content/internal/repository/gen"
+        sql_package: "pgx/v5"
+
+  - engine: "postgresql"
+    schema:
+      - "internal/modules/user/internal/migrations"
+      - "internal/modules/content/internal/migrations"
+      - "internal/modules/social/internal/migrations"
+    queries: "internal/modules/social/internal/repository/queries"
+    gen:
+      go:
+        package: "gen"
+        out: "internal/modules/social/internal/repository/gen"
         sql_package: "pgx/v5"

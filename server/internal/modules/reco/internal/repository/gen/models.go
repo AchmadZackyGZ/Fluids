@@ -15,6 +15,48 @@ type ItemEmbedding struct {
 	CreatedAt pgtype.Timestamptz
 }
 
+type Post struct {
+	ID            pgtype.UUID
+	AuthorID      pgtype.UUID
+	PostType      string
+	Caption       string
+	LikesCount    int32
+	CommentsCount int32
+	SharesCount   int32
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+type PostCodeSnippet struct {
+	ID          pgtype.UUID
+	PostID      pgtype.UUID
+	Language    string
+	FileName    string
+	CodeContent string
+	CreatedAt   pgtype.Timestamptz
+}
+
+type PostMedium struct {
+	ID           pgtype.UUID
+	PostID       pgtype.UUID
+	MediaUrl     string
+	MediaType    string
+	DisplayOrder int16
+	CreatedAt    pgtype.Timestamptz
+}
+
+type User struct {
+	ID           pgtype.UUID
+	Username     string
+	Email        string
+	PasswordHash string
+	FullName     string
+	Bio          string
+	AvatarUrl    string
+	CreatedAt    pgtype.Timestamptz
+	UpdatedAt    pgtype.Timestamptz
+}
+
 type UserEmbedding struct {
 	UserID    pgtype.UUID
 	Embedding pgvector_go.Vector
