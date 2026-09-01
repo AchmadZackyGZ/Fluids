@@ -48,3 +48,14 @@ sql:
         package: "gen"
         out: "internal/modules/social/internal/repository/gen"
         sql_package: "pgx/v5"
+
+  - engine: "postgresql"
+    schema:
+      - "internal/modules/user/internal/migrations"
+      - "internal/modules/notification/internal/migrations"
+    queries: "internal/modules/notification/internal/repository/queries"
+    gen:
+      go:
+        package: "gen"
+        out: "internal/modules/notification/internal/repository/gen"
+        sql_package: "pgx/v5"
