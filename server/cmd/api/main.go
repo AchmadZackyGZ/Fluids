@@ -9,6 +9,7 @@ import (
 
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/auth"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/content"
+	"github.com/AchmadZackyGZ/fluids/server/internal/modules/notification"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/reco"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/social"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user"
@@ -43,6 +44,7 @@ func main() {
 		user.Module,
 		auth.Module,
 		content.Module,
+		notification.Module,
 		social.Module,
 
 		// 4. Lifecycle Hook: Menyalakan & Mematikan Server secara Graceful
