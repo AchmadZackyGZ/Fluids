@@ -4,7 +4,7 @@ DB_URL=postgres://fluids_admin:fluids_password@127.0.0.1:5436/fluids_db?sslmode=
 .PHONY: dev-infra dev-server dev-web dev-ml build-all gen migrate-up migrate-down clean
 
 dev-infra:
-	podman-compose -f deploy/podman/podman-compose.dev.yml up -d
+	docker compose -f deploy/podman/podman-compose.dev.yml up -d
 
 dev-server:
 	cd server && air
@@ -26,4 +26,4 @@ migrate-down:
 	@powershell -ExecutionPolicy Bypass -File ./server/scripts/migrate.ps1 -Action down -DbUrl "$(DB_URL)"
 
 clean:
-	podman-compose -f deploy/podman/podman-compose.dev.yml down -v
+	docker compose -f deploy/podman/podman-compose.dev.yml down -v
