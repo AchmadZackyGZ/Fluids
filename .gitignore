@@ -21,6 +21,9 @@ certs/
 *.gpg
 *.asc
 
+#workbuddy-ai/memory
+.workbuddy-ai/memory
+
 # Service Accounts & OAuth Credentials
 *credentials*.json
 *service-account*.json
