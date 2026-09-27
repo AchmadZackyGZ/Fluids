@@ -4,7 +4,7 @@ DB_URL=postgres://fluids_admin:fluids_password@127.0.0.1:5436/fluids_db?sslmode=
 .PHONY: dev-infra dev-server dev-web dev-ml build-all gen migrate-up migrate-down clean
 
 dev-infra:
-	docker compose -f deploy/podman/podman-compose.dev.yml up -d
+	podman-compose -f deploy/podman/podman-compose.dev.yml up -d
 
 dev-server:
 	cd server && air
@@ -20,10 +20,10 @@ gen:
 	cd server && go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest generate
 
 migrate-up:
-	@powershell -ExecutionPolicy Bypass -File ./server/scripts/migrate.ps1 -Action up -DbUrl "$(DB_URL)"
+	bash server/scripts/migrate.sh up "$(DB_URL)"
 
 migrate-down:
-	@powershell -ExecutionPolicy Bypass -File ./server/scripts/migrate.ps1 -Action down -DbUrl "$(DB_URL)"
+	bash server/scripts/migrate.sh down "$(DB_URL)"
 
 clean:
-	docker compose -f deploy/podman/podman-compose.dev.yml down -v
+	podman-compose -f deploy/podman/podman-compose.dev.yml down -v
