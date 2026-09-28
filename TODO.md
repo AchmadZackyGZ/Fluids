@@ -274,6 +274,19 @@
 
 ---
 
+## PRODUCTION OBSERVABILITY (Phase 2 — Setelah Aplikasi Selesai)
+
+| # | Task | Priority | Notes |
+|---|------|----------|-------|
+| P1 | **Centralized Logging**: Loki + Promtail → Grafana Logs | High | Ship JSON logs dari stdout ke Loki, query by `trace_id`, `user_id`, `service` |
+| P2 | **Metrics**: Prometheus scrape `/metrics` endpoint (RED: Rate, Errors, Duration) | High | `promhttp.Handler()` expose, ServiceMonitor untuk K8s |
+| P3 | **Distributed Tracing**: Tempo + OpenTelemetry collector | Medium | Trace propagation HTTP → gRPC → RabbitMQ/Kafka |
+| P4 | **Alerting**: PrometheusRule + Alertmanager (PagerDuty/Slack) | High | High error rate, latency p99, disk/memory pressure |
+| P5 | **Log Retention & Sampling**: Loki retention 30d, sampling DEBUG di prod | Medium | Cost control |
+| P6 | **Dashboard**: Grafana (RED metrics, Log query, Trace view, Business KPIs) | High | SLO/SLI dashboard |
+
+---
+
 ## Definition of Done per Task
 - [ ] Code compiles: `go build ./...` zero error
 - [ ] Unit test pass: `go test ./...` (coverage > 70% untuk service layer)

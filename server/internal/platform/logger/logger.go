@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,44 @@ import (
 var (
 	defaultLogger *slog.Logger
 )
+
+// SensitiveFields - daftar field yang WAJIB disensor (deny-list)
+// Key = lowercase field name
+var SensitiveFields = map[string]bool{
+	"password":        true,
+	"password_hash":   true,
+	"token":           true,
+	"access_token":    true,
+	"refresh_token":   true,
+	"authorization":   true,
+	"secret":          true,
+	"api_key":         true,
+	"apikey":          true,
+	"otp":             true,
+	"pin":             true,
+	"credit_card":     true,
+	"card_number":     true,
+	"cvv":             true,
+	"ssn":             true,
+}
+
+// SanitizeArgs - filter sensitive fields dari args sebelum log
+// Usage: logger.InfoCtx(ctx, "msg", logger.SanitizeArgs("email", req.Email, "password", req.Password)...)
+func SanitizeArgs(args ...any) []any {
+	if len(args)%2 != 0 {
+		return args // invalid key-value pairs, return as-is
+	}
+	out := make([]any, 0, len(args))
+	for i := 0; i < len(args); i += 2 {
+		key, ok := args[i].(string)
+		if ok && SensitiveFields[strings.ToLower(key)] {
+			out = append(out, key, "[REDACTED]")
+		} else {
+			out = append(out, args[i], args[i+1])
+		}
+	}
+	return out
+}
 
 const (
 	LevelDebug = slog.LevelDebug
