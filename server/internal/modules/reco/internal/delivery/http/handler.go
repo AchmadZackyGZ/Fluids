@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/reco/internal/service"
+	"github.com/AchmadZackyGZ/fluids/server/internal/platform/logger"
 	"github.com/labstack/echo/v4"
 )
 
@@ -27,10 +28,17 @@ func (h *RecoHandler) GetExplore(c echo.Context) error {
 	for i := range dummyVector {
 		dummyVector[i] = 0.1
 	}
-	posts, err := h.service.GetExploreFeed(c.Request().Context(), dummyVector, int32(limit))
+
+	ctx := c.Request().Context()
+	logger.InfoCtx(ctx, "get explore attempt", "limit", limit)
+
+	posts, err := h.service.GetExploreFeed(ctx, dummyVector, int32(limit))
 	if err != nil {
+		logger.ErrorCtx(ctx, "get explore failed", "error", err, "limit", limit)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
+
+	logger.InfoCtx(ctx, "get explore success", "count", len(posts), "limit", limit)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status": "success",
 		"data":   posts,
