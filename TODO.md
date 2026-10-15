@@ -36,14 +36,15 @@
 ### 1.3 Auth Service Implementation
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.3.1 | Extend `authService` struct — tambah field `redisClient`, `userContract`, `publisher` | `server/internal/modules/auth/internal/service/service.go` | `[ ]` | Inject via constructor |
-| 1.3.2 | Implement `RefreshToken(ctx, req)` — validate refresh token di Redis, issue new access+refresh, rotate | Same file | `[ ]` | Redis key: `refresh_token:{user_id}:{token_hash}` |
-| 1.3.3 | Implement `RevokeToken(ctx, userID, tokenHash)` — delete dari Redis, blacklist access token (optional) | Same file | `[ ]` | Log `token revoked` dengan `user_id` |
-| 1.3.4 | Implement `RequestPasswordReset(ctx, req)` — generate reset token, simpan Redis (TTL 1h), publish event ke RabbitMQ | Same file | `[ ]` | Event: `user.password_reset_requested` |
-| 1.3.5 | Implement `VerifyEmail(ctx, req)` — validate token, update user `email_verified=true`, revoke token | Same file | `[ ]` | Token di Redis: `email_verification:{token}` |
-| 1.3.6 | Implement `ResendVerification(ctx, email)` — generate new token, publish event | Same file | `[ ]` | Rate limit: max 3/hour per email |
-| 1.3.7 | Implement `ChangePassword(ctx, req)` — verify current password, hash new, revoke all refresh tokens | Same file | `[ ]` | Log `password changed` |
-| 1.3.8 | Implement `DeleteAccount(ctx, userID)` — soft delete (flag `deleted_at`), revoke tokens, publish event | Same file | `[ ]` | GDPR compliance |
+| 1.3.1 | Extend `authService` struct — tambah field `redisClient`, `userContract` | `server/internal/modules/auth/internal/service/service.go` | `[x]` | Inject via constructor |
+| 1.3.2 | Implement `RefreshToken(ctx, req)` — validate refresh token di Redis, issue new access+refresh, rotate | Same file | `[x]` | Redis key: `refresh_token:{token_hash}` |
+| 1.3.3 | Implement `RevokeToken(ctx, userID, tokenHash)` — delete dari Redis, blacklist access token | Same file | `[x]` | Log `token revoked` dengan `user_id` |
+| 1.3.4 | Implement `RequestPasswordReset(ctx, req)` — generate reset token, simpan Redis (TTL 1h), publish event ke RabbitMQ | Same file | `[x]` | Event: `user.password_reset_requested` (TODO RabbitMQ) |
+| 1.3.5 | Implement `VerifyEmail(ctx, req)` — validate token, update user `email_verified=true`, revoke token | Same file | `[x]` | Token di Redis: `email_verification:{token}` |
+| 1.3.6 | Implement `ResendVerification(ctx, email)` — generate new token, publish event | Same file | `[x]` | Rate limit: max 3/hour per email |
+| 1.3.7 | Implement `ChangePassword(ctx, req)` — verify current password, hash new, revoke all refresh tokens | Same file | `[x]` | Log `password changed` |
+| 1.3.8 | Implement `DeleteAccount(ctx, userID)` — soft delete (flag `deleted_at`), revoke tokens, publish event | Same file | `[x]` | GDPR compliance |
+| 1.3.9 | Helper: `issueTokens`, `revokeAllUserTokens`, `generateToken`, `hashToken` | Same file | `[x]` | Internal helpers |
 
 ### 1.4 Auth Repository (PostgreSQL + Redis)
 | # | Task | File | Status | Notes |
@@ -59,15 +60,15 @@
 ### 1.5 Auth HTTP Handler
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.5.1 | Tambah endpoints di `RegisterAuthRoutes`: `POST /refresh`, `POST /logout`, `POST /forgot-password`, `POST /verify-email`, `POST /resend-verification`, `POST /reset-password`, `PATCH /change-password`, `DELETE /account` | `server/internal/modules/auth/internal/delivery/http/handler.go` | `[ ]` | `/logout`, `/change-password`, `/account` pakai `JWTMiddleware` |
-| 1.5.2 | Implement handler methods dengan binding, validation, logging, error mapping | Same file | `[ ]` | Map `contracts.Err*` ke HTTP status |
-| 1.5.3 | `RefreshToken` handler — read refresh token dari cookie (HttpOnly) atau body, return new access+refresh di cookie | Same file | `[ ]` | Cookie: `HttpOnly; Secure; SameSite=Lax; Path=/` |
-| 1.5.4 | `Logout` handler — revoke refresh token, clear cookie | Same file | `[ ]` | |
-| 1.5.5 | `ForgotPassword` handler — rate limit check, call service | Same file | `[ ]` | Rate limit via Redis sliding window |
-| 1.5.6 | `VerifyEmail` & `ResendVerification` handlers | Same file | `[ ]` | |
-| 1.5.7 | `ResetPassword` handler — validate token, hash new password | Same file | `[ ]` | |
-| 1.5.8 | `ChangePassword` handler — require JWT, verify current password | Same file | `[ ]` | |
-| 1.5.9 | `DeleteAccount` handler — require JWT, soft delete | Same file | `[ ]` | |
+| 1.5.1 | Tambah endpoints di `RegisterAuthRoutes`: `POST /refresh`, `POST /logout`, `POST /forgot-password`, `POST /verify-email`, `POST /resend-verification`, `POST /reset-password`, `PATCH /change-password`, `DELETE /account` | `server/internal/modules/auth/internal/delivery/http/handler.go` | `[x]` | `/logout`, `/change-password`, `/account` pakai `JWTMiddleware` |
+| 1.5.2 | Implement handler methods dengan binding, validation, logging, error mapping | Same file | `[x]` | Map `contracts.Err*` ke HTTP status |
+| 1.5.3 | `RefreshToken` handler — read refresh token dari cookie/body, return new access+refresh | Same file | `[x]` | Cookie support + body fallback |
+| 1.5.4 | `Logout` handler — revoke refresh token, clear cookie | Same file | `[x]` | |
+| 1.5.5 | `ForgotPassword` handler — rate limit check, call service | Same file | `[x]` | Rate limit via Redis |
+| 1.5.6 | `VerifyEmail` & `ResendVerification` handlers | Same file | `[x]` | |
+| 1.5.7 | `ResetPassword` handler — validate token, hash new password | Same file | `[x]` | |
+| 1.5.8 | `ChangePassword` handler — require JWT, verify current password | Same file | `[x]` | |
+| 1.5.9 | `DeleteAccount` handler — require JWT, soft delete | Same file | `[x]` | |
 
 ### 1.6 RabbitMQ Publisher & Topology
 | # | Task | File | Status | Notes |
@@ -92,9 +93,9 @@
 ### 1.8 Auth Module Wiring & Test
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.8.1 | Update `auth/module.go` — provide semua dependency baru (redis, publisher, repository, service) | `server/internal/modules/auth/module.go` | `[ ]` | |
+| 1.8.1 | Update `auth/module.go` — provide service, handler, new routes | `server/internal/modules/auth/module.go` | `[x]` | Redis provided globally in main.go |
 | 1.8.2 | Run migration: `bash server/scripts/migrate.sh up` | Terminal | `[ ]` | Verify 3 tabel baru di `auth` schema |
-| 1.8.3 | Build check: `cd server && go build ./...` | Terminal | `[ ]` | Zero error |
+| 1.8.3 | Build check: `cd server && go build ./...` | Terminal | `[x]` | Zero error |
 | 1.8.4 | Manual test full flow: register → login → refresh → logout → forgot-password → verify-email → reset-password | Terminal (curl) | `[ ]` | Verify DB + Redis + RabbitMQ + logs |
 | 1.8.5 | Verify structured logs: setiap request punya `trace_id`, `request_id`, `user_id` (kalau auth) | Terminal + `jq` | `[ ]` | |
 

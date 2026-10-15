@@ -18,6 +18,7 @@ import (
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/database"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/logger"
+	"github.com/AchmadZackyGZ/fluids/server/internal/platform/redisx"
 )
 
 // NewEchoServer membuat instance Echo HTTP Server dan mendaftarkan route global
@@ -53,10 +54,13 @@ func main() {
 		// 1. Provide Connection Pool Database PostgreSQL (*pgxpool.Pool)
 		fx.Provide(database.NewPostgresPool),
 
-		// 2. Provide Echo HTTP Server Instance
+		// 2. Provide Redis Client
+		fx.Provide(redisx.NewRedisClient),
+
+		// 3. Provide Echo HTTP Server Instance
 		fx.Provide(NewEchoServer),
 
-		// 3. Register Modul-Modul Aplikasi
+		// 4. Register Modul-Modul Aplikasi
 		reco.Module,
 		user.Module,
 		auth.Module,

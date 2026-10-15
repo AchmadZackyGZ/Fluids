@@ -65,9 +65,7 @@ services:
       - fluids-net
 
   minio:
-    # CATATAN: MinIO menghapus image-nya dari Docker Hub (minio/minio 404).
-    # Registry resmi sekarang: quay.io/minio/minio
-    image: quay.io/minio/minio:latest
+    image: quay.io/minio/minio:latest # WAJIB quay.io, Docker Hub 404
     container_name: fluids-minio
     command: server /data --console-address ":9001"
     ports:

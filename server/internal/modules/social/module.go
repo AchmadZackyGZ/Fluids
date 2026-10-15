@@ -4,7 +4,6 @@ import (
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/social/internal/delivery/http"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/social/internal/repository"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/social/internal/service"
-	"github.com/AchmadZackyGZ/fluids/server/internal/platform/redisx"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/security"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/fx"
@@ -34,7 +33,6 @@ func RegisterSocialRoutes(e *echo.Echo, handler *http.SocialHandler) {
 }
 
 var Module = fx.Options(
-	fx.Provide(redisx.NewRedisClient),
 	fx.Provide(repository.NewSocialRepository),
 	fx.Provide(service.NewSocialService),
 	fx.Provide(http.NewSocialHandler),
