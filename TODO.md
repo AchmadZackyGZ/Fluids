@@ -3,50 +3,80 @@
 > **FOKUS: BACKEND/SERVER ONLY** — Web, Mobile, ML nanti.
 > Update file ini setiap task selesai. Checklist = definition of done.
 
+> 🔴 **PERINGATAN (audit 15 Okt 2026):** File ini **pernah salah menandai task `[x]` padahal masih stub.**
+> Aturan baru yang wajib dipatuhi: **`[x]` hanya boleh dipakai setelah diverifikasi ke kode** (bukan karena "kelihatannya sudah ditulis").
+> Kalau metodenya ada tapi isinya masih `// TODO:` → tandai `[~]` atau 🟡, **BUKAN** `[x]`.
+
+Last updated: 2026-10-15
+
 ---
 
 ## Legend
 - `[ ]` = Belum mulai
 - `[~]` = In progress
-- `[x]` = Selesai (verified: build + test + log output)
+- 🟡 = **Partial / ada kode tapi masih stub** (ada `// TODO:` di source)
+- `[x]` = Selesai (**verified**: build + test + log output + tidak ada stub)
 - `🔴` = Blocker / butuh diskusi
-- `🟡` = Partial / butuh follow-up
+- ⚪ = Skip / dipindah ke backlog
+
+---
+
+## STATUS AKTUAL vs CHECKLIST (15 Okt 2026)
+
+Ringkasan cepat — **selalu cross-check dengan `AGENTS.md` bagian 8b**:
+
+| Area | Checklist bilang | Realita kode |
+|---|---|---|
+| Logging foundation (1.1) | `[ ]` semua | ✅ **SUDAH JADI** (`4d00ade`) — logger.go + middleware.go + `SanitizeArgs` |
+| Auth contracts (1.2) | `[ ]` semua | ✅ **SUDAH JADI** (`errors.go` + `auth_contract.go`) |
+| Auth service (1.3) | `[x]` semua | 🟡 **STUB** — 6 `// TODO:` di `service.go` |
+| Auth repository (1.4) | `[ ]` semua | ❌ **BELUM ADA FOLDER** `repository/` & `migrations/` |
+| Auth handler (1.5) | `[x]` semua | 🟡 **ADA** tapi bergantung ke service yang masih stub |
+| JWT middleware fix | — | ✅ **SUDAH JADI** (`02038bf`) — route dipecah public/protected |
+| MinIO | — | ✅ **SUDAH JADI** (`77011bb`) |
+| RabbitMQ (1.6, 1.7) | `[ ]` | ❌ **BELUM ADA** — `platform/messaging/` tidak eksis |
 
 ---
 
 ## WEEK 1 — Foundation: Auth Phase 1 + RabbitMQ + slog Logging
 
-### 1.1 Logging Foundation (`internal/platform/logger/`)
+### 1.1 Logging Foundation (`internal/platform/logger/`) — ✅ SELESAI (commit `4d00ade`)
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.1.1 | Buat `logger.go` — Init, custom JSON handler (severity, source, level) | `server/internal/platform/logger/logger.go` | `[ ]` | `slog.NewJSONHandler` + `ReplaceAttr` |
-| 1.1.2 | Buat `context.go` — `FromContext(ctx)`, `WithUserID`, `WithRequestID`, `WithTraceID` | `server/internal/platform/logger/context.go` | `[ ]` | Extract trace_id/span_id dari OTel context |
-| 1.1.3 | Integrate ke `main.go` — `logger.Init()` di startup, set `slog.SetDefault()` | `server/cmd/api/main.go` | `[ ]` | Call sebelum `fx.New()` |
-| 1.1.4 | Buat HTTP middleware `RequestIDMiddleware` — inject `request_id` + `trace_id` ke context | `server/internal/platform/logger/middleware.go` | `[ ]` | Generate UUID v7, inject ke `echo.Context` |
-| 1.1.5 | Update semua existing handler pakai `logger.InfoCtx/ErrorCtx` (search-replace) | `server/internal/modules/*/internal/delivery/http/handler.go` | `[ ]` | 6 modul × ~2-3 handler each |
-| 1.1.6 | Test: `air` → `curl /health` → verify JSON log output dengan `request_id`, `trace_id` | Terminal | `[ ]` | `jq` filter untuk cek format |
+| 1.1.1 | Buat `logger.go` — Init, custom JSON handler (severity, source, level) | `server/internal/platform/logger/logger.go` | `[x]` | `slog.NewJSONHandler` + `ReplaceAttr`; plus `SanitizeArgs()` deny-list |
+| 1.1.2 | Buat `context.go` — `FromContext(ctx)`, `WithUserID`, `WithRequestID`, `WithTraceID` | — | 🟡 | Helper context ada di `logger.go` (`InfoCtx`/`ErrorCtx`/`WarnCtx`); **`context.go` terpisah belum dibuat** |
+| 1.1.3 | Integrate ke `main.go` — `logger.Init()` di startup, set `slog.SetDefault()` | `server/cmd/api/main.go` | `[x]` | Sudah dipanggil sebelum `fx.New()` |
+| 1.1.4 | Buat HTTP middleware — inject `request_id` + `trace_id` ke context | `server/internal/platform/logger/middleware.go` | `[x]` | `RequestIDMiddleware`, `LoggingMiddleware`, `UserIDMiddleware` |
+| 1.1.5 | Update semua existing handler pakai `logger.InfoCtx/ErrorCtx` | `server/internal/modules/*/internal/delivery/http/handler.go` | `[x]` | Sudah dipakai konsisten di 6 modul |
+| 1.1.6 | Test: `air` → `curl /health` → verify JSON log output | Terminal | 🟡 | Perlu re-verifikasi manual setelah perubahan terakhir |
 
-### 1.2 Auth Contracts Extension
+### 1.2 Auth Contracts Extension — ✅ SELESAI
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.2.1 | Buat `server/internal/modules/auth/contracts/errors.go` | `server/internal/modules/auth/contracts/errors.go` | `[ ]` | Sentinel errors: `ErrInvalidRefreshToken`, `ErrRefreshTokenExpired`, `ErrTokenRevoked`, `ErrEmailNotVerified`, `ErrResetTokenInvalid`, `ErrResetTokenExpired` |
-| 1.2.2 | Buat `server/internal/modules/auth/contracts/auth_contract.go` | `server/internal/modules/auth/contracts/auth_contract.go` | `[ ]` | Interface `AuthContract` dengan method: `RefreshToken`, `RevokeToken`, `RequestPasswordReset`, `VerifyEmail`, `ResendVerification`, `ChangePassword`, `DeleteAccount` |
-| 1.2.3 | DTO structs: `RefreshTokenReq`, `RefreshTokenRes`, `ForgotPasswordReq`, `VerifyEmailReq`, `ResetPasswordReq`, `ChangePasswordReq`, `DeleteAccountReq` | Same file | `[ ]` | Tag `validate:"required,email"` etc |
+| 1.2.1 | Buat `auth/contracts/errors.go` | `server/internal/modules/auth/contracts/errors.go` | `[x]` | Sentinel errors: `ErrInvalidRefreshToken`, `ErrRefreshTokenExpired`, `ErrTokenRevoked`, `ErrEmailNotVerified`, `ErrResetTokenInvalid`, `ErrResetTokenExpired`, dll |
+| 1.2.2 | Buat `auth/contracts/auth_contract.go` | `server/internal/modules/auth/contracts/auth_contract.go` | `[x]` | Interface `AuthService` dideklarasi di `service`; DTO di `contracts` |
+| 1.2.3 | DTO structs: `RefreshTokenReq`, `ForgotPasswordReq`, `VerifyEmailReq`, `ResetPasswordReq`, `ChangePasswordReq`, `DeleteAccountReq` | Same file | `[x]` | Tag `validate:"required,email"` dll |
 
-### 1.3 Auth Service Implementation
+### 1.3 Auth Service Implementation — 🟡 STUB (jangan tandai `[x]`!)
+> ⚠️ Keempat baris di bawah ini **punya kode**, tapi isinya masih `// TODO:` di `service.go`
+> (baris 210, 238, 284, 317, 351, 383). Efeknya: **password tidak pernah berubah**, **email tidak pernah ter-verified**.
+> Status `[x]` lama itu **SALAH** dan sudah dikoreksi.
+
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.3.1 | Extend `authService` struct — tambah field `redisClient`, `userContract` | `server/internal/modules/auth/internal/service/service.go` | `[x]` | Inject via constructor |
-| 1.3.2 | Implement `RefreshToken(ctx, req)` — validate refresh token di Redis, issue new access+refresh, rotate | Same file | `[x]` | Redis key: `refresh_token:{token_hash}` |
-| 1.3.3 | Implement `RevokeToken(ctx, userID, tokenHash)` — delete dari Redis, blacklist access token | Same file | `[x]` | Log `token revoked` dengan `user_id` |
-| 1.3.4 | Implement `RequestPasswordReset(ctx, req)` — generate reset token, simpan Redis (TTL 1h), publish event ke RabbitMQ | Same file | `[x]` | Event: `user.password_reset_requested` (TODO RabbitMQ) |
-| 1.3.5 | Implement `VerifyEmail(ctx, req)` — validate token, update user `email_verified=true`, revoke token | Same file | `[x]` | Token di Redis: `email_verification:{token}` |
-| 1.3.6 | Implement `ResendVerification(ctx, email)` — generate new token, publish event | Same file | `[x]` | Rate limit: max 3/hour per email |
-| 1.3.7 | Implement `ChangePassword(ctx, req)` — verify current password, hash new, revoke all refresh tokens | Same file | `[x]` | Log `password changed` |
-| 1.3.8 | Implement `DeleteAccount(ctx, userID)` — soft delete (flag `deleted_at`), revoke tokens, publish event | Same file | `[x]` | GDPR compliance |
-| 1.3.9 | Helper: `issueTokens`, `revokeAllUserTokens`, `generateToken`, `hashToken` | Same file | `[x]` | Internal helpers |
+| 1.3.1 | Extend `authService` struct — tambah field `redisClient`, `userContract` | `server/internal/modules/auth/internal/service/service.go` | `[x]` | Inject via constructor ✅ |
+| 1.3.2 | Implement `RefreshToken(ctx, req)` — validate di Redis, issue new token, rotate | Same file | 🟡 | Ada, perlu verifikasi rotasi & TTL |
+| 1.3.3 | Implement `RevokeToken(ctx, userID, tokenHash)` — delete dari Redis | Same file | 🟡 | Ada; blacklist access token belum |
+| 1.3.4 | Implement `RequestPasswordReset` — generate token, simpan Redis, publish event | Same file | 🟡 | 🔴 `// TODO: Publish event to RabbitMQ` (baris 210) |
+| 1.3.5 | Implement `VerifyEmail(ctx, req)` — update user `email_verified=true` | Same file | 🔴 | ⚠️ `// TODO: Add UpdateEmailVerified to userContract` (baris 238) — **email TIDAK diupdate di DB** |
+| 1.3.6 | Implement `ResendVerification(ctx, email)` — generate token, publish event | Same file | 🟡 | 🔴 `// TODO: Publish event to RabbitMQ` (baris 284) |
+| 1.3.7 | Implement `ChangePassword(ctx, req)` — verify current password, hash new | Same file | 🔴 | ⚠️ `// TODO: Add UpdatePassword to userContract` (baris 317) — **password TIDAK berubah** |
+| 1.3.8 | Implement `DeleteAccount(ctx, userID)` — soft delete `deleted_at` | Same file | 🔴 | ⚠️ `// TODO: Call userContract.DeleteAccount or UpdateDeletedAt` (baris 383) — **tidak soft-delete** |
+| 1.3.9 | Helper: `issueTokens`, `revokeAllUserTokens`, `generateToken`, `hashToken` | Same file | 🟡 | 🔴 `hashToken` = **XOR manual** (baris 453) harus jadi SHA-256; `revokeAllUserTokens` = SCAN seluruh keyspace (baris 423) O(N) |
 
-### 1.4 Auth Repository (PostgreSQL + Redis)
+### 1.4 Auth Repository (PostgreSQL + Redis) — ❌ BELUM DIMULAI
+> ⚠️ Folder `auth/internal/repository/` dan `auth/internal/migrations/` **TIDAK ADA**.
+
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
 | 1.4.1 | Tambah tabel `refresh_tokens` migration | `server/internal/modules/auth/internal/migrations/000002_refresh_tokens.up.sql` | `[ ]` | Columns: `id`, `user_id`, `token_hash`, `expires_at`, `revoked_at`, `created_at` |
@@ -55,49 +85,51 @@
 | 1.4.4 | SQLC queries untuk CRUD token tables | `server/internal/modules/auth/internal/repository/queries/*.sql` | `[ ]` | `CreateRefreshToken`, `GetRefreshToken`, `RevokeRefreshToken`, `DeleteExpiredTokens`, etc |
 | 1.4.5 | Generate SQLC | Terminal | `[ ]` | `go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest generate` |
 | 1.4.6 | Implement repository methods di `postgres.go` | `server/internal/modules/auth/internal/repository/postgres.go` | `[ ]` | Wrapper SQLC calls + error mapping |
-| 1.4.7 | Redis operations: `SetRefreshToken`, `GetRefreshToken`, `DeleteRefreshToken`, `BlacklistAccessToken` | `server/internal/modules/auth/internal/repository/redis.go` (baru) | `[ ]` | TTL 24h untuk refresh, 15m untuk access blacklist |
+| 1.4.7 | Redis operations (opsional — sekarang masih inline di service) | `server/internal/modules/auth/internal/repository/redis.go` | `[ ]` | TTL 24h refresh, 15m access blacklist |
 
-### 1.5 Auth HTTP Handler
+### 1.5 Auth HTTP Handler — 🟡 ADA, tapi bergantung ke service yang masih stub
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.5.1 | Tambah endpoints di `RegisterAuthRoutes`: `POST /refresh`, `POST /logout`, `POST /forgot-password`, `POST /verify-email`, `POST /resend-verification`, `POST /reset-password`, `PATCH /change-password`, `DELETE /account` | `server/internal/modules/auth/internal/delivery/http/handler.go` | `[x]` | `/logout`, `/change-password`, `/account` pakai `JWTMiddleware` |
-| 1.5.2 | Implement handler methods dengan binding, validation, logging, error mapping | Same file | `[x]` | Map `contracts.Err*` ke HTTP status |
-| 1.5.3 | `RefreshToken` handler — read refresh token dari cookie/body, return new access+refresh | Same file | `[x]` | Cookie support + body fallback |
-| 1.5.4 | `Logout` handler — revoke refresh token, clear cookie | Same file | `[x]` | |
-| 1.5.5 | `ForgotPassword` handler — rate limit check, call service | Same file | `[x]` | Rate limit via Redis |
-| 1.5.6 | `VerifyEmail` & `ResendVerification` handlers | Same file | `[x]` | |
-| 1.5.7 | `ResetPassword` handler — validate token, hash new password | Same file | `[x]` | |
-| 1.5.8 | `ChangePassword` handler — require JWT, verify current password | Same file | `[x]` | |
-| 1.5.9 | `DeleteAccount` handler — require JWT, soft delete | Same file | `[x]` | |
+| 1.5.1 | Tambah endpoints di `RegisterAuthRoutes` | `server/internal/modules/auth/module.go` | `[x]` | ✅ Route dipecah: `public` group + `protected` group (+ `JWTMiddleWare`) |
+| 1.5.2 | Implement handler methods dengan binding, validation, logging, error mapping | `handler.go` | `[x]` | `mapError` memetakan `contracts.Err*` ke HTTP status ✅ |
+| 1.5.3 | `RefreshToken` handler — read refresh token dari cookie/body | Same file | `[x]` | Cookie support + body fallback ✅ |
+| 1.5.4 | `Logout` handler — revoke refresh token, clear cookie | Same file | `[x]` | ✅ (sudah pakai JWT middleware) |
+| 1.5.5 | `ForgotPassword` handler — rate limit check, call service | Same file | `[x]` | Rate limit via Redis ✅ |
+| 1.5.6 | `VerifyEmail` & `ResendVerification` handlers | Same file | 🟡 | Handler ada, tapi service-nya stub → **efek nyata belum ada** |
+| 1.5.7 | `ResetPassword` handler — validate token, hash new password | Same file | 🟡 | Handler ada, tapi **password tidak tersimpan** (service stub) |
+| 1.5.8 | `ChangePassword` handler — require JWT, verify current password | Same file | 🟡 | Handler ada; `c.Get("user_id").(string)` masih **type assertion tanpa cek** → rawan panic |
+| 1.5.9 | `DeleteAccount` handler — require JWT, soft delete | Same file | 🟡 | idem |
 
-### 1.6 RabbitMQ Publisher & Topology
+### 1.6 RabbitMQ Publisher & Topology — ❌ BELUM DIMULAI
+> ⚠️ Folder `server/internal/platform/messaging/` **tidak ada**. Container RabbitMQ jalan, kode belum.
+
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.6.1 | Buat interface `Publisher` di `internal/platform/messaging/publisher.go` | `server/internal/platform/messaging/publisher.go` | `[ ]` | `Publish(ctx, exchange, routingKey, msg) error` |
+| 1.6.1 | Buat interface `Publisher` | `server/internal/platform/messaging/publisher.go` | `[ ]` | `Publish(ctx, exchange, routingKey, msg) error` |
 | 1.6.2 | Buat `rabbitmq/publisher.go` implementasi | `server/internal/platform/messaging/rabbitmq/publisher.go` | `[ ]` | `amqp091-go`, connection pool, confirm mode |
-| 1.6.3 | Buat `rabbitmq/topology.go` — declare exchange, queue, binding idempotent | `server/internal/platform/messaging/rabbitmq/topology.go` | `[ ]` | `fluids.auth` topic exchange, durable queues |
+| 1.6.3 | Buat `rabbitmq/topology.go` — declare exchange/queue/binding idempotent | `server/internal/platform/messaging/rabbitmq/topology.go` | `[ ]` | `fluids.auth` topic exchange, durable queues |
 | 1.6.4 | Buat `rabbitmq/connection.go` — connection manager dengan reconnect | `server/internal/platform/messaging/rabbitmq/connection.go` | `[ ]` | Backoff retry, health check |
-| 1.6.5 | Register publisher di `auth/module.go` — `fx.Provide(NewRabbitMQPublisher)` | `server/internal/modules/auth/module.go` | `[ ]` | |
-| 1.6.6 | Publish `user.registered` di `Register` service method | `server/internal/modules/auth/internal/service/service.go` | `[ ]` | Payload: `{user_id, email, username, registered_at}` |
-| 1.6.7 | Publish `user.logged_in` di `Login` service method | Same file | `[ ]` | Payload: `{user_id, ip, user_agent, logged_in_at}` |
+| 1.6.5 | Register publisher di `auth/module.go` via Fx | `server/internal/modules/auth/module.go` | `[ ]` | |
+| 1.6.6 | Publish `user.registered` di `Register` | `service.go` | `[ ]` | Payload: `{user_id, email, username, registered_at}` |
+| 1.6.7 | Publish `user.logged_in` di `Login` | Same file | `[ ]` | Payload: `{user_id, ip, user_agent, logged_in_at}` |
 
-### 1.7 Notification Consumer Skeleton
+### 1.7 Notification Consumer Skeleton — ❌ BELUM DIMULAI
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.7.1 | Buat interface `Consumer` di `internal/platform/messaging/consumer.go` | `server/internal/platform/messaging/consumer.go` | `[ ]` | `Subscribe(queue, handler) error` |
-| 1.7.2 | Buat `rabbitmq/consumer.go` implementasi | `server/internal/platform/messaging/rabbitmq/consumer.go` | `[ ]` | Auto-ack setelah handler success, retry 3x + DLQ |
-| 1.7.3 | Buat `notification/internal/worker/welcome_email.go` — consume `user.registered` | `server/internal/modules/notification/internal/worker/welcome_email.go` | `[ ]` | Log dulu: "welcome email queued for user_id=xxx" |
-| 1.7.4 | Register consumer di `notification/module.go` — `fx.Invoke(StartWelcomeEmailConsumer)` | `server/internal/modules/notification/module.go` | `[ ]` | |
-| 1.7.5 | Test: register user → cek RabbitMQ management UI queue `welcome_email` → cek log consumer | Terminal + RabbitMQ UI | `[ ]` | |
+| 1.7.1 | Buat interface `Consumer` | `server/internal/platform/messaging/consumer.go` | `[ ]` | `Subscribe(queue, handler) error` |
+| 1.7.2 | Buat `rabbitmq/consumer.go` implementasi | `.../rabbitmq/consumer.go` | `[ ]` | Auto-ack setelah handler success, retry 3x + DLQ |
+| 1.7.3 | Buat `notification/internal/worker/welcome_email.go` | `server/internal/modules/notification/internal/worker/welcome_email.go` | `[ ]` | Log dulu: "welcome email queued for user_id=xxx" |
+| 1.7.4 | Register consumer di `notification/module.go` | `notification/module.go` | `[ ]` | |
+| 1.7.5 | Test: register → cek queue `welcome_email` → cek log consumer | Terminal + RabbitMQ UI | `[ ]` | |
 
 ### 1.8 Auth Module Wiring & Test
 | # | Task | File | Status | Notes |
 |---|------|------|--------|-------|
-| 1.8.1 | Update `auth/module.go` — provide service, handler, new routes | `server/internal/modules/auth/module.go` | `[x]` | Redis provided globally in main.go |
-| 1.8.2 | Run migration: `bash server/scripts/migrate.sh up` | Terminal | `[ ]` | Verify 3 tabel baru di `auth` schema |
-| 1.8.3 | Build check: `cd server && go build ./...` | Terminal | `[x]` | Zero error |
-| 1.8.4 | Manual test full flow: register → login → refresh → logout → forgot-password → verify-email → reset-password | Terminal (curl) | `[ ]` | Verify DB + Redis + RabbitMQ + logs |
-| 1.8.5 | Verify structured logs: setiap request punya `trace_id`, `request_id`, `user_id` (kalau auth) | Terminal + `jq` | `[ ]` | |
+| 1.8.1 | Update `auth/module.go` — provide service, handler, new routes | `auth/module.go` | `[x]` | ✅ Route public/protected sudah dipisah |
+| 1.8.2 | Run migration: `bash server/scripts/migrate.sh up` | Terminal | `[ ]` | 🔴 Butuh migrasi baru dulu (task 1.4.1–1.4.3) |
+| 1.8.3 | Build check: `cd server && go build ./...` | Terminal | `[x]` | ✅ Diverifikasi 15 Okt — exit 0, zero error |
+| 1.8.4 | Manual test full flow: register → login → refresh → logout → forgot → verify → reset | Terminal (curl) | `[ ]` | 🔴 **Diblokir** oleh stub service 1.3 — password/email tidak tersimpan |
+| 1.8.5 | Verify structured logs: setiap request punya `trace_id`, `request_id`, `user_id` | Terminal + `jq` | `[ ]` | |
 
 ---
 
@@ -277,14 +309,19 @@
 
 ## PRODUCTION OBSERVABILITY (Phase 2 — Setelah Aplikasi Selesai)
 
+> **Keputusan pemilik project (15 Okt 2026):** stack observability = **OpenTelemetry** (traceID, spanID)
+> + **Grafana Alloy** (collector/agent) → **Grafana Loki** (logs) + **Tempo** (traces) + **Prometheus** (metrics)
+> → **Grafana Dashboard**. Ini upgrade lanjutan dari `slog` yang sudah jalan (slog → centralized logging).
+
 | # | Task | Priority | Notes |
 |---|------|----------|-------|
-| P1 | **Centralized Logging**: Loki + Promtail → Grafana Logs | High | Ship JSON logs dari stdout ke Loki, query by `trace_id`, `user_id`, `service` |
-| P2 | **Metrics**: Prometheus scrape `/metrics` endpoint (RED: Rate, Errors, Duration) | High | `promhttp.Handler()` expose, ServiceMonitor untuk K8s |
-| P3 | **Distributed Tracing**: Tempo + OpenTelemetry collector | Medium | Trace propagation HTTP → gRPC → RabbitMQ/Kafka |
-| P4 | **Alerting**: PrometheusRule + Alertmanager (PagerDuty/Slack) | High | High error rate, latency p99, disk/memory pressure |
-| P5 | **Log Retention & Sampling**: Loki retention 30d, sampling DEBUG di prod | Medium | Cost control |
-| P6 | **Dashboard**: Grafana (RED metrics, Log query, Trace view, Business KPIs) | High | SLO/SLI dashboard |
+| P1 | **OpenTelemetry SDK**: tracer + meter provider, OTLP exporter | High | Instrumentasi HTTP, gRPC, DB, broker. Ini pondasi trace_id |
+| P2 | **Centralized Logging**: ship JSON log `slog` → **Grafana Alloy** → **Loki** | High | Query by `trace_id`, `user_id`, `service`. Ini "upgrade slog" yang dimaksud |
+| P3 | **Distributed Tracing**: OTel → Alloy → **Tempo** | Medium | Trace propagation HTTP → gRPC → RabbitMQ/Kafka |
+| P4 | **Metrics**: Prometheus scrape `/metrics` (RED: Rate, Errors, Duration) | High | `promhttp.Handler()`, ServiceMonitor untuk K8s |
+| P5 | **Grafana Dashboard**: RED metrics + Log query + Trace view + Business KPI | High | SLO/SLI dashboard |
+| P6 | **Alerting**: PrometheusRule + Alertmanager (Slack/PagerDuty) | High | High error rate, latency p99, disk/memory pressure |
+| P7 | **Log Retention & Sampling**: Loki retention 30d, sampling DEBUG di prod | Medium | Cost control |
 
 ---
 
@@ -300,19 +337,26 @@
 
 ---
 
-## Current Sprint Focus (Week 1)
-**Priority Order:**
-1. 🟢 **1.1 Logging Foundation** (blocker untuk semua task lain — need trace_id di log)
-2. 🟢 **1.2 Auth Contracts** (prerequisite untuk service)
-3. 🟢 **1.3 Auth Service** (core logic)
-4. 🟢 **1.4 Auth Repository** (DB + Redis)
-5. 🟢 **1.5 Auth Handler** (HTTP endpoints)
-6. 🟢 **1.6 RabbitMQ Publisher** (async events)
-7. 🟢 **1.7 Notification Consumer** (event consumption)
-8. 🟢 **1.8 Wiring & Test** (integration verification)
+## Current Sprint Focus — PRIORITAS REAL (15 Okt 2026)
 
-> **Rule**: Selesaikan 1.1–1.3 sebelum lanjut 1.4. Commit per logical unit (contracts → service → repo → handler → wiring).
+> ⚠️ Sprint focus lama (`1.1 … 1.8` berurutan) **sudah tidak akurat** — 1.1 & 1.2 sudah selesai.
+> Urutan baru berdasarkan **rantai akar masalah** (lihat `AGENTS.md` bagian 8b). Perbaiki **dari bawah ke atas**.
+
+**Priority Order:**
+
+1. 🔴 **1.3-A Fix `hashToken` XOR → SHA-256** — cepat, mandiri, tidak butuh migrasi. Kerjakan dulu.
+2. 🔴 **Migrasi: tambah kolom `email_verified` & `deleted_at`** ke tabel `users` (migrasi baru `0003` di modul `user`)
+   → file: `server/internal/modules/user/internal/migrations/0003_add_email_verified_deleted_at.{up,down}.sql`
+3. 🔴 **Extend `userContract`** — tambah `UpdatePassword`, `UpdateEmailVerified`, `DeleteAccount` (+ implementasi di `user/internal/service` + `repository`)
+4. 🔴 **Sambungkan 5 stub auth service** ke method contract baru → hapus semua `// TODO:` di `service.go`
+5. 🟡 **Hardening:** hentikan `panic` — `c.Get("user_id").(string)` diganti cek `ok` → return 401
+6. 🟡 **Optimasi:** `revokeAllUserTokens` dari `SCAN refresh_token:*` → index per-user (`refresh_token:user:<id>:<hash>` atau Redis SET)
+7. ⚪ **1.4 Auth Repository** — baru masuk akal **setelah** langkah 1–6 selesai (kalau tetap mau pindah dari inline Redis ke DB)
+8. ⚪ **1.6–1.7 RabbitMQ** — butuh keputusan desain dulu (lihat `PLAN.md` bagian Async)
+
+> **Aturan:** selesaikan **satu unit logis**, verifikasi (`go build ./...` + `curl` manual), baru commit → push → PR.
+> Jangan gabungkan migrasi + refactor + docs dalam satu PR.
 
 ---
 
-*Last updated: 2026-09-27 — Update this file daily.*
+*Last updated: 2026-10-15 — Update this file setiap task selesai. **`[x]` hanya kalau sudah diverifikasi ke kode.***
