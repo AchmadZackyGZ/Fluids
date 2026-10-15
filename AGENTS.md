@@ -215,12 +215,13 @@ Env file: `deploy/podman/.env` (**gitignored**, copy dari `.env.example`)
 | redis | `redis:7-alpine` | 6379 |
 | rabbitmq | `rabbitmq:3-management-alpine` | 5672 / 15672 |
 | kafka | `apache/kafka:latest` | 9092 |
-| minio | **`quay.io/minio/minio:latest`** | 9000 / 9001 |
+| seaweedfs | `chrislusf/seaweedfs:latest` | 9000 / 9001 |
 
 - Database: `fluids_db`, user `fluids_admin`
 - Extension terpasang otomatis: `uuid-ossp`, `vector`, `pgcrypto`, `pg_trgm`
 - ⚠️ Port **5432 sudah dipakai** container project lain (`invora-postgres`). Fluids pakai 5436 — jangan diubah.
-- ⚠️ MinIO **menghapus image-nya dari Docker Hub**. Jangan pernah pakai `docker.io/minio/minio`, selalu `quay.io/minio/minio`.
+- ⚠️ MinIO sudah diganti ke **SeaweedFS** (`chrislusf/seaweedfs:latest`) — S3-compatible, no auth required, image public di Docker Hub.
+- ⚠️ Podman machine **wajib rootful + cgroupfs** di Windows/WSL (06 Okt 2026): rootless bikin `cgroupControllers: []` kosong → semua container gagal `crun: controller pids is not available`. Fix: `podman machine set --rootful` + file `/etc/containers/containers.conf.d/99-cgroupfs.conf` berisi `[engine]` + `cgroup_manager = "cgroupfs"` di dalam VM (via `Get-Content ... | podman machine ssh sudo tee ...`), lalu restart machine. File ini hilang kalau machine di-`rm`, wajib dibuat ulang.
 
 Aplikasi: Go API `:8080` (health `/health`), Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
 
