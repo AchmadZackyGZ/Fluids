@@ -8,7 +8,8 @@
 > | `PLAN.md` | Keputusan arsitektur + roadmap (ADR style) — **source of truth arsitektur** |
 > | `ARCHITECTURE_DOCUMENTATION.md` | **File ini** — penjelasan teknis detail: alur data, kontrak, skema |
 > | `AGENTS.md` | Aturan kerja, konvensi ngoding, jebakan yang sudah terkonfirmasi |
-> | `TODO.md` | Status task per minggu (checklist) |
+> | `TODO.md` | Status task per minggu (checklist, **ke depan**) |
+> | `TASK_LOG.md` | Riwayat task yang **sudah selesai** + protokol review/commit |
 > | `.agents/rules/design-tokens.md` | **Source of truth styling UI** — jangan diubah tanpa alasan kuat |
 >
 > ⚠️ **Riwayat:** dokumen ini sebelumnya berisi arsitektur *aspirational* yang salah
@@ -387,7 +388,8 @@ Diurutkan dari paling kritis.
 | Roadmap 8 minggu | `PLAN.md` bagian 10 |
 | Aturan ngoding & jebakan | `AGENTS.md` bagian 5 & 10 |
 | Cara menjalankan | `AGENTS.md` bagian 7 |
-| Status task | `TODO.md` |
+| Status task (ke depan) | `TODO.md` |
+| Riwayat task selesai + protokol review | `TASK_LOG.md` |
 | Styling UI | `.agents/rules/design-tokens.md` |
 
 ---

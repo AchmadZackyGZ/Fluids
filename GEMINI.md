@@ -20,9 +20,10 @@ Rujuk file tersebut sebagai **satu-satunya sumber kebenaran** (*single source of
 | `AGENTS.md` | Konteks lengkap: alur branch, stack, struktur modul, konvensi, jebakan, **status pekerjaan terkini** |
 | `PLAN.md` | Keputusan arsitektur + roadmap (ADR style) |
 | `ARCHITECTURE_DOCUMENTATION.md` | Referensi teknis detail arsitektur aktual |
-| `TODO.md` | Status task per-minggu |
+| `TODO.md` | Status task per-minggu (ke depan) |
+| `TASK_LOG.md` | Riwayat task yang **sudah selesai** + protokol review/commit |
 
-**Urutan baca yang disarankan:** `AGENTS.md` → `PLAN.md` → `ARCHITECTURE_DOCUMENTATION.md` → `TODO.md`.
+**Urutan baca yang disarankan:** `AGENTS.md` → `PLAN.md` → `ARCHITECTURE_DOCUMENTATION.md` → `TODO.md` → `TASK_LOG.md`.
 
 ## 3. Aturan wajib (ringkas)
 

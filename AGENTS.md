@@ -9,7 +9,8 @@ Terakhir diperbarui: 15 Oktober 2026
 > 📌 **Dokumen lain & perannya** (supaya tidak tumpang tindih):
 > - `PLAN.md` → keputusan arsitektur + roadmap (ADR style). Ini yang jadi acuan arah.
 > - `ARCHITECTURE_DOCUMENTATION.md` → referensi teknis detail arsitektur **aktual**.
-> - `TODO.md` → status task per-minggu.
+> - `TODO.md` → status task per-minggu (**ke depan**).
+> - `TASK_LOG.md` → riwayat task yang **sudah selesai** + protokol review/commit. Baca ini untuk tahu apa yang sudah dikerjakan.
 > - `GEMINI.md` → pointer ke design token.
 > - File ini (`AGENTS.md`) → **aturan kerja + konvensi + jebakan + status terkini**.
 
@@ -100,6 +101,7 @@ Fluids/
 ├── ARCHITECTURE_DOCUMENTATION.md    ← referensi teknis arsitektur AKTUAL
 ├── PLAN.md                          ← keputusan arsitektur + roadmap (ADR)
 ├── TODO.md                          ← status task per-minggu
+├── TASK_LOG.md                      ← riwayat task SELESAI + protokol review/commit
 ├── IDEA.md                          ← ringkasan ide project (1 paragraf)
 ├── GEMINI.md                        ← pointer ke design-tokens
 ├── Makefile                         ← entry point perintah dev
