@@ -65,7 +65,11 @@ services:
       - fluids-net
 
   minio:
-    image: quay.io/minio/minio:latest # WAJIB quay.io, Docker Hub 404
+    # ⚠️ MinIO MENGHAPUS semua image publiknya (Docker Hub 404, quay.io sekarang private).
+    #    Pakai community mirror yang build dari source MinIO resmi: ghcr.io/coollabsio/minio
+    #    Alternatif: docker.io/coollabsio/minio:latest
+    #    Konteks: https://github.com/minio/minio/issues/21647
+    image: ghcr.io/coollabsio/minio:latest
     container_name: fluids-minio
     command: server /data --console-address ":9001"
     ports:
@@ -76,5 +80,10 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
     networks:
       - fluids-net

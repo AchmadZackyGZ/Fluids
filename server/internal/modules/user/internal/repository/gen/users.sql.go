@@ -20,7 +20,8 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4
 )
-RETURNING id, username, email, full_name, bio, avatar_url, created_at, updated_at
+RETURNING id, username, email, full_name, bio, avatar_url,
+          email_verified, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -31,14 +32,15 @@ type CreateUserParams struct {
 }
 
 type CreateUserRow struct {
-	ID        pgtype.UUID
-	Username  string
-	Email     string
-	FullName  string
-	Bio       string
-	AvatarUrl string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID            pgtype.UUID
+	Username      string
+	Email         string
+	FullName      string
+	Bio           string
+	AvatarUrl     string
+	EmailVerified bool
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
@@ -56,6 +58,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.FullName,
 		&i.Bio,
 		&i.AvatarUrl,
+		&i.EmailVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -63,14 +66,29 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, username, email, password_hash, full_name, bio, avatar_url, created_at, updated_at
+SELECT id, username, email, password_hash, full_name, bio, avatar_url,
+       email_verified, created_at, updated_at
 FROM users
-WHERE email = $1 LIMIT 1
+WHERE email = $1 AND deleted_at IS NULL
+LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID            pgtype.UUID
+	Username      string
+	Email         string
+	PasswordHash  string
+	FullName      string
+	Bio           string
+	AvatarUrl     string
+	EmailVerified bool
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Username,
@@ -79,6 +97,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.FullName,
 		&i.Bio,
 		&i.AvatarUrl,
+		&i.EmailVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -86,20 +105,24 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
-from users
-where id = $1 LIMIT 1
+SELECT id, username, email, password_hash, full_name, bio, avatar_url,
+       email_verified, created_at, updated_at
+FROM users
+WHERE id = $1 AND deleted_at IS NULL
+LIMIT 1
 `
 
 type GetUserByIDRow struct {
-	ID        pgtype.UUID
-	Username  string
-	Email     string
-	FullName  string
-	Bio       string
-	AvatarUrl string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID            pgtype.UUID
+	Username      string
+	Email         string
+	PasswordHash  string
+	FullName      string
+	Bio           string
+	AvatarUrl     string
+	EmailVerified bool
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error) {
@@ -109,9 +132,11 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDR
 		&i.ID,
 		&i.Username,
 		&i.Email,
+		&i.PasswordHash,
 		&i.FullName,
 		&i.Bio,
 		&i.AvatarUrl,
+		&i.EmailVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -119,20 +144,23 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDR
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, email, full_name, bio, avatar_url, created_at, updated_at
+SELECT id, username, email, full_name, bio, avatar_url,
+       email_verified, created_at, updated_at
 FROM users
-WHERE username = $1 LIMIT 1
+WHERE username = $1 AND deleted_at IS NULL
+LIMIT 1
 `
 
 type GetUserByUsernameRow struct {
-	ID        pgtype.UUID
-	Username  string
-	Email     string
-	FullName  string
-	Bio       string
-	AvatarUrl string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	ID            pgtype.UUID
+	Username      string
+	Email         string
+	FullName      string
+	Bio           string
+	AvatarUrl     string
+	EmailVerified bool
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUserByUsernameRow, error) {
@@ -145,8 +173,71 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (GetUs
 		&i.FullName,
 		&i.Bio,
 		&i.AvatarUrl,
+		&i.EmailVerified,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const softDeleteUser = `-- name: SoftDeleteUser :execrows
+UPDATE users
+SET deleted_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+func (q *Queries) SoftDeleteUser(ctx context.Context, id pgtype.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, softDeleteUser, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateUserEmailVerified = `-- name: UpdateUserEmailVerified :execrows
+UPDATE users
+SET email_verified = $2,
+    updated_at     = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+type UpdateUserEmailVerifiedParams struct {
+	ID            pgtype.UUID
+	EmailVerified bool
+}
+
+func (q *Queries) UpdateUserEmailVerified(ctx context.Context, arg UpdateUserEmailVerifiedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateUserEmailVerified, arg.ID, arg.EmailVerified)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :execrows
+
+UPDATE users
+SET password_hash = $2,
+    updated_at    = CURRENT_TIMESTAMP
+WHERE id = $1
+  AND deleted_at IS NULL
+`
+
+type UpdateUserPasswordParams struct {
+	ID           pgtype.UUID
+	PasswordHash string
+}
+
+// ============================================================
+// Step B: dipakai modul auth
+// ============================================================
+func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

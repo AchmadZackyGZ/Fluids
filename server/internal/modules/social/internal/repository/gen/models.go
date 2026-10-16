@@ -60,5 +60,7 @@ type User struct {
 	AvatarUrl      string
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
+	EmailVerified  bool
+	DeletedAt      pgtype.Timestamptz
 	GithubUsername string
 }

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/contracts"
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/user/internal/repository"
@@ -35,14 +34,15 @@ func (s *userService) CreateUser(ctx context.Context, req contracts.CreateUserRe
 	}
 
 	return &contracts.UserDTO{
-		ID:        u.ID.String(),
-		Username:  u.Username,
-		Email:     u.Email,
-		FullName:  u.FullName,
-		Bio:       u.Bio,
-		AvatarURL: u.AvatarUrl,
-		CreatedAt: u.CreatedAt.Time,
-		UpdatedAt: u.UpdatedAt.Time,
+		ID:            u.ID.String(),
+		Username:      u.Username,
+		Email:         u.Email,
+		FullName:      u.FullName,
+		Bio:           u.Bio,
+		AvatarURL:     u.AvatarUrl,
+		EmailVerified: u.EmailVerified,
+		CreatedAt:     u.CreatedAt.Time,
+		UpdatedAt:     u.UpdatedAt.Time,
 	}, nil
 }
 
@@ -53,22 +53,23 @@ func (s *userService) GetUserByEmail(ctx context.Context, email string) (*contra
 	}
 
 	return &contracts.UserDTO{
-		ID:           u.ID.String(),
-		Username:     u.Username,
-		Email:        u.Email,
-		PasswordHash: u.PasswordHash,
-		FullName:     u.FullName,
-		Bio:          u.Bio,
-		AvatarURL:    u.AvatarUrl,
-		CreatedAt:    u.CreatedAt.Time,
-		UpdatedAt:    u.UpdatedAt.Time,
+		ID:            u.ID.String(),
+		Username:      u.Username,
+		Email:         u.Email,
+		PasswordHash:  u.PasswordHash,
+		FullName:      u.FullName,
+		Bio:           u.Bio,
+		AvatarURL:     u.AvatarUrl,
+		EmailVerified: u.EmailVerified,
+		CreatedAt:     u.CreatedAt.Time,
+		UpdatedAt:     u.UpdatedAt.Time,
 	}, nil
 }
 
 func (s *userService) GetUserByID(ctx context.Context, idStr string) (*contracts.UserDTO, error) {
 	uid, err := uuid.Parse(idStr)
 	if err != nil {
-		return nil, errors.New("invalid user id format")
+		return nil, contracts.ErrUserNotFound
 	}
 
 	u, err := s.repo.GetUserByID(ctx, uid)
@@ -77,13 +78,40 @@ func (s *userService) GetUserByID(ctx context.Context, idStr string) (*contracts
 	}
 
 	return &contracts.UserDTO{
-		ID:        u.ID.String(),
-		Username:  u.Username,
-		Email:     u.Email,
-		FullName:  u.FullName,
-		Bio:       u.Bio,
-		AvatarURL: u.AvatarUrl,
-		CreatedAt: u.CreatedAt.Time,
-		UpdatedAt: u.UpdatedAt.Time,
+		ID:            u.ID.String(),
+		Username:      u.Username,
+		Email:         u.Email,
+		FullName:      u.FullName,
+		Bio:           u.Bio,
+		AvatarURL:     u.AvatarUrl,
+		EmailVerified: u.EmailVerified,
+		CreatedAt:     u.CreatedAt.Time,
+		UpdatedAt:     u.UpdatedAt.Time,
 	}, nil
+}
+
+// --- Step B: dipakai modul auth ---
+
+func (s *userService) UpdatePassword(ctx context.Context, userID, passwordHash string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return contracts.ErrUserNotFound
+	}
+	return s.repo.UpdateUserPassword(ctx, uid, passwordHash)
+}
+
+func (s *userService) UpdateEmailVerified(ctx context.Context, userID string, verified bool) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return contracts.ErrUserNotFound
+	}
+	return s.repo.UpdateUserEmailVerified(ctx, uid, verified)
+}
+
+func (s *userService) DeleteAccount(ctx context.Context, userID string) error {
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return contracts.ErrUserNotFound
+	}
+	return s.repo.SoftDeleteUser(ctx, uid)
 }
