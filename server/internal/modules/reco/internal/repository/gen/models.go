@@ -46,15 +46,17 @@ type PostMedium struct {
 }
 
 type User struct {
-	ID           pgtype.UUID
-	Username     string
-	Email        string
-	PasswordHash string
-	FullName     string
-	Bio          string
-	AvatarUrl    string
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	ID            pgtype.UUID
+	Username      string
+	Email         string
+	PasswordHash  string
+	FullName      string
+	Bio           string
+	AvatarUrl     string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+	EmailVerified bool
+	DeletedAt     pgtype.Timestamptz
 }
 
 type UserEmbedding struct {

@@ -38,9 +38,13 @@ func mapPgError(err error) error {
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, arg gen.CreateUserParams) (gen.CreateUserRow, error)
-	GetUserByEmail(ctx context.Context, email string) (gen.User, error)
+	GetUserByEmail(ctx context.Context, email string) (gen.GetUserByEmailRow, error) // ⚠️ berubah
 	GetUserByID(ctx context.Context, id uuid.UUID) (gen.GetUserByIDRow, error)
 	GetUserByUsername(ctx context.Context, username string) (gen.GetUserByUsernameRow, error)
+
+	UpdateUserPassword(ctx context.Context, id uuid.UUID, passwordHash string) error
+	UpdateUserEmailVerified(ctx context.Context, id uuid.UUID, verified bool) error
+	SoftDeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type postgresRepository struct {
@@ -61,10 +65,10 @@ func (r *postgresRepository) CreateUser(ctx context.Context, arg gen.CreateUserP
 	return row, nil
 }
 
-func (r *postgresRepository) GetUserByEmail(ctx context.Context, email string) (gen.User, error) {
+func (r *postgresRepository) GetUserByEmail(ctx context.Context, email string) (gen.GetUserByEmailRow, error) {
 	u, err := r.q.GetUserByEmail(ctx, email)
 	if err != nil {
-		return gen.User{}, mapPgError(err)
+		return gen.GetUserByEmailRow{}, mapPgError(err)
 	}
 	return u, nil
 }
@@ -83,4 +87,45 @@ func (r *postgresRepository) GetUserByUsername(ctx context.Context, username str
 		return gen.GetUserByUsernameRow{}, mapPgError(err)
 	}
 	return u, nil
+}
+
+// --- Step B: dipakai modul auth ---
+
+func (r *postgresRepository) UpdateUserPassword(ctx context.Context, id uuid.UUID, passwordHash string) error {
+	rows, err := r.q.UpdateUserPassword(ctx, gen.UpdateUserPasswordParams{
+		ID:           pgtype.UUID{Bytes: id, Valid: true},
+		PasswordHash: passwordHash,
+	})
+	if err != nil {
+		return mapPgError(err)
+	}
+	if rows == 0 {
+		return contracts.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *postgresRepository) UpdateUserEmailVerified(ctx context.Context, id uuid.UUID, verified bool) error {
+	rows, err := r.q.UpdateUserEmailVerified(ctx, gen.UpdateUserEmailVerifiedParams{
+		ID:            pgtype.UUID{Bytes: id, Valid: true},
+		EmailVerified: verified,
+	})
+	if err != nil {
+		return mapPgError(err)
+	}
+	if rows == 0 {
+		return contracts.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *postgresRepository) SoftDeleteUser(ctx context.Context, id uuid.UUID) error {
+	rows, err := r.q.SoftDeleteUser(ctx, pgtype.UUID{Bytes: id, Valid: true})
+	if err != nil {
+		return mapPgError(err)
+	}
+	if rows == 0 {
+		return contracts.ErrUserNotFound
+	}
+	return nil
 }
