@@ -1,121 +1,137 @@
+# ============================================================================
+# FLUIDS — Makefile
+# ----------------------------------------------------------------------------
+# ⚠️ PENTING (Windows): GNU Make di Windows memakai **cmd.exe** sebagai shell,
+#    BUKAN bash. Jadi semua perintah di bawah wajib kompatibel dengan cmd.exe.
+#
+#    ❌ JANGAN pakai redirect `2>/dev/null`
+#       -> cmd.exe error: "The system cannot find the path specified."
+#    ❌ JANGAN pakai pipe POSIX (grep / awk / sed / printf) -> tidak ada di cmd.exe
+#    ❌ JANGAN pakai `sleep` -> tidak ada di cmd.exe (pakai `ping -n`)
+#    ✅ Untuk mengabaikan error satu baris, pakai prefix `-` (fitur make sendiri)
+#    ✅ Baris kosong di cmd: `@echo.`  (bukan `@echo ""`)
+#
+#    `make migrate-status` pernah gagal karena melanggar aturan di atas. Sudah diperbaiki.
+# ============================================================================
+
 # Database Connection URL
 DB_URL=postgres://fluids_admin:fluids_password@127.0.0.1:5436/fluids_db?sslmode=disable
 
-# Path ke file compose (dipakai berulang di target di bawah)
+# Path & nama yang dipakai berulang
 COMPOSE_FILE=deploy/podman/podman-compose.dev.yml
+PG_CONTAINER=fluids-postgres
+PG_USER=fluids_admin
+PG_DB=fluids_db
 
-# Nama branch kerja (validasi cepat sebelum commit)
-WORK_BRANCH=dev-zacky
+.PHONY: help dev-infra infra-down infra-logs infra-status dev-server dev-web dev-ml gen migrate-up migrate-down migrate-status build-all clean destroy
 
-.PHONY: help dev-infra infra-down infra-logs infra-status dev-server dev-web dev-ml gen migrate-up migrate-down migrate-status migrate-create build-all clean reset-db
+# ---------------------------------------------------------------------------
+# Bantuan
+# ---------------------------------------------------------------------------
 
-## ---------------------------------------------------------------------------
-## Bantuan
-## ---------------------------------------------------------------------------
+help:
+	@echo FLUIDS - daftar perintah
+	@echo ------------------------------------------
+	@echo [Infrastruktur]
+	@echo   make dev-infra        Nyalakan 5 container
+	@echo   make infra-status     Cek container yang jalan
+	@echo   make infra-logs       Lihat log (make infra-logs svc=postgres)
+	@echo   make infra-down       Matikan container (data tetap aman)
+	@echo.
+	@echo [Development]
+	@echo   make dev-server       Backend Go + hot reload (air)
+	@echo   make dev-web          Frontend Vite
+	@echo.
+	@echo [Database]
+	@echo   make migrate-up       Jalankan semua migrasi
+	@echo   make migrate-down     Rollback semua migrasi
+	@echo   make migrate-status   Lihat versi migrasi tiap modul
+	@echo   make gen              Generate kode SQLC
+	@echo.
+	@echo [Verifikasi]
+	@echo   make build-all        Build backend + frontend
+	@echo.
+	@echo [Hati-hati]
+	@echo   make clean            Matikan container (data AMAN)
+	@echo   make destroy          Matikan + HAPUS SEMUA DATA
 
-help: ## Tampilkan daftar perintah yang tersedia
-	@echo "FLUIDS — daftar perintah:"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
-	@echo ""
-	@echo "  Contoh: make dev-infra  ->  make migrate-up"
+# ---------------------------------------------------------------------------
+# Infrastruktur (Podman)
+# ---------------------------------------------------------------------------
 
-## ---------------------------------------------------------------------------
-## Infrastruktur (Podman)
-## ---------------------------------------------------------------------------
-
-dev-infra: ## Nyalakan 5 container (postgres, redis, rabbitmq, kafka, minio)
+dev-infra:
 	podman-compose -f $(COMPOSE_FILE) up -d
-	@echo ""
-	@echo "Menunggu Postgres siap..."
-	@sleep 3
-	@podman exec fluids-postgres pg_isready -U fluids_admin -d fluids_db || echo "Postgres belum siap, tunggu beberapa detik lagi."
+	@echo.
+	@echo Selesai. Cek dengan: make infra-status
 
-infra-down: ## Matikan container (volume/data TETAP aman)
+infra-down:
 	podman-compose -f $(COMPOSE_FILE) down
 
-infra-logs: ## Lihat log semua container (ikuti dengan: make infra-logs svc=postgres)
+infra-logs:
 	podman-compose -f $(COMPOSE_FILE) logs -f $(svc)
 
-infra-status: ## Cek container yang sedang jalan
-	podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+infra-status:
+	@podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-## ---------------------------------------------------------------------------
-## Development server
-## ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Development server
+# ---------------------------------------------------------------------------
 
-dev-server: ## Jalankan backend Go dengan hot-reload (air)
+dev-server:
 	cd server && air
 
-dev-web: ## Jalankan frontend Vite
+dev-web:
 	cd web && npx -y pnpm@9.0.0 dev
 
-dev-ml: ## Jalankan ML service (belum disetup)
+dev-ml:
 	cd ml && uv run uvicorn neonml.serving.app:app --reload --port 8000
 
-## ---------------------------------------------------------------------------
-## Database
-## ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Database
+# ---------------------------------------------------------------------------
 
-migrate-up: ## Jalankan semua migrasi (urutan: user -> content -> social -> notification -> reco)
+migrate-up:
 	bash server/scripts/migrate.sh up "$(DB_URL)"
 
-migrate-down: ## Rollback semua migrasi (urutan dibalik)
+migrate-down:
 	bash server/scripts/migrate.sh down "$(DB_URL)"
 
-migrate-status: ## Lihat tabel tracking migrasi tiap modul
-	@echo "=== schema_migrations_user ==="
-	@podman exec fluids-postgres psql -U fluids_admin -d fluids_db -c "SELECT version, dirty FROM schema_migrations_user ORDER BY version;" 2>/dev/null || echo "(belum ada)"
-	@echo "=== schema_migrations_content ==="
-	@podman exec fluids-postgres psql -U fluids_admin -d fluids_db -c "SELECT version, dirty FROM schema_migrations_content ORDER BY version;" 2>/dev/null || echo "(belum ada)"
-	@echo "=== schema_migrations_social ==="
-	@podman exec fluids-postgres psql -U fluids_admin -d fluids_db -c "SELECT version, dirty FROM schema_migrations_social ORDER BY version;" 2>/dev/null || echo "(belum ada)"
-	@echo "=== schema_migrations_notification ==="
-	@podman exec fluids-postgres psql -U fluids_admin -d fluids_db -c "SELECT version, dirty FROM schema_migrations_notification ORDER BY version;" 2>/dev/null || echo "(belum ada)"
-	@echo "=== schema_migrations_reco ==="
-	@podman exec fluids-postgres psql -U fluids_admin -d fluids_db -c "SELECT version, dirty FROM schema_migrations_reco ORDER BY version;" 2>/dev/null || echo "(belum ada)"
+# Satu query UNION -> satu tabel output, tanpa redirect sama sekali.
+# Syarat: migrasi sudah pernah dijalankan (tabel schema_migrations_* sudah ada).
+migrate-status:
+	@podman exec $(PG_CONTAINER) psql -U $(PG_USER) -d $(PG_DB) -c "SELECT 'user' AS modul, version, dirty FROM schema_migrations_user UNION ALL SELECT 'content', version, dirty FROM schema_migrations_content UNION ALL SELECT 'social', version, dirty FROM schema_migrations_social UNION ALL SELECT 'notification', version, dirty FROM schema_migrations_notification UNION ALL SELECT 'reco', version, dirty FROM schema_migrations_reco ORDER BY modul;"
 
-## Buat file migrasi baru. Contoh:
-##   make migrate-create mod=user name=add_email_verified
-migrate-create: ## Buat pasangan file migrasi baru (wajib: mod=<modul> name=<nama>)
-	@if [ -z "$(mod)" ] || [ -z "$(name)" ]; then \
-		echo "ERROR: wajib isi mod dan name."; \
-		echo "Contoh: make migrate-create mod=user name=add_email_verified"; \
-		exit 1; \
-	fi
-	@DIR="server/internal/modules/$(mod)/internal/migrations"; \
-	if [ ! -d "$$DIR" ]; then echo "ERROR: folder $$DIR tidak ada."; exit 1; fi; \
-	NEXT=$$(ls "$$DIR"/*.sql 2>/dev/null | sed -E 's#.*/([0-9]+)_.*#\1#' | sort -n | tail -1); \
-	NEXT=$$(printf "%04d" $$((10#$${NEXT:-0} + 1))); \
-	FILE="$$DIR/$${NEXT}_$(name)"; \
-	touch "$${FILE}.up.sql" "$${FILE}.down.sql"; \
-	echo "Dibuat:"; echo "  $${FILE}.up.sql"; echo "  $${FILE}.down.sql"
-
-gen: ## Generate kode SQLC dari queries/*.sql
-	@echo "Generating SQLC code..."
+gen:
+	@echo Generating SQLC code...
 	cd server && go run github.com/sqlc-dev/sqlc/cmd/sqlc@latest generate
 
-## ---------------------------------------------------------------------------
-## Build & verifikasi
-## ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Build & verifikasi
+# ---------------------------------------------------------------------------
 
-build-all: ## Verifikasi build backend + frontend
-	@echo "=== Backend: go build ==="
+build-all:
+	@echo === Backend: go build ===
 	cd server && go build ./...
-	@echo "=== Backend: go vet ==="
-	cd server && go vet ./... || echo "(go vet ada warning — review manual)"
-	@echo "=== Frontend: pnpm build ==="
+	@echo === Backend: go vet ===
+	-cd server && go vet ./...
+	@echo === Frontend: pnpm build ===
 	cd web && npx -y pnpm@9.0.0 run build
-	@echo ""
-	@echo "Semua build OK."
+	@echo.
+	@echo Semua build OK.
 
-## ---------------------------------------------------------------------------
-## Berbahaya — baca dulu
-## ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Berbahaya — baca dulu
+# ---------------------------------------------------------------------------
 
-clean: ## ⚠️ Matikan container + HAPUS SEMUA VOLUME (data hilang permanen)
-	@echo "⚠️  Ini akan MENGHAPUS semua data Postgres/Redis/MinIO."
-	@echo "    Tekan Ctrl+C dalam 5 detik untuk membatalkan..."
-	@sleep 5
+clean:
+	podman-compose -f $(COMPOSE_FILE) down
+	@echo Container dimatikan. Data (volume) masih aman.
+
+destroy:
+	@echo ================================================================
+	@echo  PERINGATAN: semua data Postgres, Redis, dan MinIO akan DIHAPUS.
+	@echo  Tekan Ctrl+C dalam 5 detik untuk membatalkan...
+	@echo ================================================================
+	@ping -n 6 127.0.0.1 > nul
 	podman-compose -f $(COMPOSE_FILE) down -v
-	@echo "Selesai. Volume dihapus."
+	@echo Selesai. Semua volume dihapus.
