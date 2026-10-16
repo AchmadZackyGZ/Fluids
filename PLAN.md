@@ -347,9 +347,10 @@ shared/events/           ← 🔜 Event schemas (JSON/Protobuf) — BELUM ADA
 | Redis | `docker.io/library/redis:7-alpine` | 6379 | Cache, session, refresh token |
 | RabbitMQ | `docker.io/library/rabbitmq:3-management-alpine` | 5672 / 15672 | Task queue (🔜 belum dipakai kode) |
 | Kafka | `docker.io/apache/kafka:latest` | 9092 | Event log (🔜 belum dipakai kode) |
-| MinIO | `quay.io/minio/minio:latest` | 9000 / 9001 | Object storage (avatar, media) |
+| MinIO | `ghcr.io/coollabsio/minio:latest` | 9000 / 9001 | Object storage (avatar, media) |
 
-> ⚠️ **MinIO WAJIB dari `quay.io`.** Image `docker.io/minio/minio` sudah **dihapus (404)**.
+> ⚠️ **MinIO image**: MinIO menghapus **semua** image publiknya (Docker Hub 404, quay.io private).
+> Pakai **`ghcr.io/coollabsio/minio:latest`** (community mirror, build dari source resmi, no auth).
 > Container name `fluids-minio`, volume `minio_data`, console `--console-address ":9001"`.
 
 - **Env**: `deploy/podman/.env` (gitignored) ← copy dari `.env.example`.
@@ -475,7 +476,7 @@ dev-zacky  ← Daily work branch (KAMU DI SINI)
 | 008 | Structured logging dengan `slog` (stdlib) — JSON, trace_id/span_id, context propagation | 2026-10-15 | ✅ **Implemented** (`4d00ade`) |
 | 009 | **Webhook outbound** — dispatch via broker + HMAC-SHA256 signature + retry/backoff | 2026-10-15 | ✅ Accepted (planned) |
 | 010 | **Observability stack**: OpenTelemetry → Grafana Alloy → Loki (logs) + Tempo (traces) + Prometheus (metrics) | 2026-10-15 | ✅ Accepted (planned) |
-| 011 | **Object storage = MinIO** (`quay.io/minio/minio:latest`) — kembali dari eksperimen SeaweedFS | 2026-10-15 | ✅ **Implemented** (`77011bb`) |
+| 011 | **Object storage = MinIO** (`ghcr.io/coollabsio/minio:latest`) — kembali dari eksperimen SeaweedFS | 2026-10-15 | ✅ **Implemented** (`77011bb` + follow-up image fix) |
 | 012 | **slog di-upgrade ke centralized logging** (ship JSON → Loki) setelah aplikasi selesai | 2026-10-15 | ✅ Accepted (planned) |
 
 > **Catatan ADR-002:** versi lama menyebut "GraphQL gateway *opsional*". Direvisi karena
@@ -510,7 +511,7 @@ dev-zacky  ← Daily work branch (KAMU DI SINI)
 5. **Format**: `gofmt -w` **hanya file yang diubah**. Jangan `gofmt -w .`.
 6. **Env**: `.env` tidak di-commit. Copy dari `.env.example`.
 7. **Ports**: 5436 (PG), 3000 (Web), 8080 (API) — jangan ubah.
-8. **MinIO**: Selalu `quay.io/minio/minio:latest` (bukan Docker Hub).
+8. **MinIO**: Pakai `ghcr.io/coollabsio/minio:latest` — MinIO hapus semua image publik (Docker Hub 404, quay.io private).
 9. **Logging**: Wajib pakai `logger.InfoCtx/ErrorCtx` dari `internal/platform/logger`. **Dilarang** `fmt.Println`, `log.Printf`, `slog.Info` langsung di modul. Semua log lewat wrapper.
 10. **Trace ID**: Setiap request HTTP/gRPC/WS **wajib** ada `trace_id` di log (inject via middleware/interceptor). *(🔜 setelah OTel masuk; sekarang baru `request_id`.)*
 11. **Git add**: **Jangan `git add .`** — selalu per-file. Pernah ada file pribadi nyaris ter-commit.

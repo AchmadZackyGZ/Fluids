@@ -242,13 +242,13 @@ Env file: `deploy/podman/.env` (**gitignored**, copy dari `.env.example`)
 | redis | `docker.io/library/redis:7-alpine` | 6379 |
 | rabbitmq | `docker.io/library/rabbitmq:3-management-alpine` | 5672 / 15672 |
 | kafka | `docker.io/apache/kafka:latest` | 9092 |
-| minio | **`quay.io/minio/minio:latest`** | 9000 / 9001 |
+| minio | **`ghcr.io/coollabsio/minio:latest`** | 9000 / 9001 |
 
 - Database: `fluids_db`, user `fluids_admin`
 - Extension terpasang otomatis: `uuid-ossp`, `vector`, `pgcrypto`, `pg_trgm`
 - ⚠️ Port **5432 sudah dipakai** container project lain (`invora-postgres`). Fluids pakai 5436 — jangan diubah.
 - ⚠️ **Object storage = MinIO** (keputusan 15 Okt 2026, kembali dari eksperimen SeaweedFS). Container name `fluids-minio`, volume `minio_data`, console `--console-address ":9001"`.
-- ⚠️ MinIO **menghapus** image-nya dari Docker Hub (`docker.io/minio/minio` → 404). **WAJIB** pakai `quay.io/minio/minio:latest`. Registry resmi sekarang `quay.io`.
+- ⚠️ **Object storage = MinIO**, tapi MinIO **menghapus semua image publiknya** (`docker.io/minio/minio` → 404, dan `quay.io/minio/minio` sekarang **private** → `unauthorized`). **Pakai community mirror: `ghcr.io/coollabsio/minio:latest`** (build otomatis dari source MinIO resmi, multi-arch, tanpa auth). Alternatif: `docker.io/coollabsio/minio:latest`. Konteks: https://github.com/minio/minio/issues/21647
 - ⚠️ Podman machine **wajib rootful + cgroupfs** di Windows/WSL (06 Okt 2026): rootless bikin `cgroupControllers: []` kosong → semua container gagal `crun: controller pids is not available`. Fix: `podman machine set --rootful` + file `/etc/containers/containers.conf.d/99-cgroupfs.conf` berisi `[engine]` + `cgroup_manager = "cgroupfs"` di dalam VM (via `Get-Content ... | podman machine ssh sudo tee ...`), lalu restart machine. File ini hilang kalau machine di-`rm`, wajib dibuat ulang.
 
 Aplikasi: Go API `:8080` (health `/health`), Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
@@ -325,7 +325,8 @@ Semua di bawah ini **sudah selesai, sudah di-commit, dan PR-nya sudah di-merge**
 |---|---|
 | `4d00ade` | `feat(platform)`: structured logging dengan `slog` + context propagation |
 | `02038bf` | `fix(auth)`: mount JWT middleware di protected routes (`/logout`, `/change-password`, `/account`) |
-| `77011bb` | `chore(infra)`: switch object storage kembali ke MinIO (`quay.io/minio/minio:latest`) |
+| `77011bb` | `chore(infra)`: switch object storage kembali ke MinIO |
+| *(working tree)* | `fix(infra)`: ganti image MinIO ke `ghcr.io/coollabsio/minio:latest` (quay.io jadi private) |
 | `8506e25` | `docs`: sync AGENTS.md & TODO.md + enforce LF untuk shell & SQL |
 | `bffec42` | `refactor(social)`: hapus per-module redis provider |
 

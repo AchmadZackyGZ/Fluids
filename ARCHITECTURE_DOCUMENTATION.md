@@ -248,7 +248,7 @@ Rencana tambahan: cache feed, counter realtime, Pub/Sub untuk WebSocket horizont
 
 ### 5.3 MinIO (object storage)
 
-- Image: `quay.io/minio/minio:latest` — **wajib `quay.io`**, image Docker Hub (`minio/minio`) dihapus (404).
+- Image: `ghcr.io/coollabsio/minio:latest` — MinIO **menghapus semua image publik** (Docker Hub `minio/minio` 404, `quay.io/minio/minio` sekarang private → `unauthorized`). Pakai community mirror `coollabsio/minio` yang build dari source MinIO resmi.
 - Port 9000 (API S3) / 9001 (console).
 - Rencana pemakaian: avatar user, media post.
 - 🔴 **Kode Go belum ada integrasi apa pun.** `platform/storage/` belum dibuat.
@@ -311,7 +311,7 @@ Env: `deploy/podman/.env` (gitignored, copy dari `.env.example`)
 | redis | `docker.io/library/redis:7-alpine` | 6379 |
 | rabbitmq | `docker.io/library/rabbitmq:3-management-alpine` | 5672 / 15672 |
 | kafka | `docker.io/apache/kafka:latest` | 9092 |
-| minio | `quay.io/minio/minio:latest` | 9000 / 9001 |
+| minio | `ghcr.io/coollabsio/minio:latest` | 9000 / 9001 |
 
 Aplikasi: Go API `:8080`, Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
 
