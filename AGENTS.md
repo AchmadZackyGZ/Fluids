@@ -572,6 +572,7 @@ Catatan teknis yang masih menggantung:
 13. **Sebelum mengecek pelanggaran arsitektur**, baca dulu bagian 4. Import yang diizinkan lintas modul **hanya** ke `contracts/`.
 14. **Jangan percaya checklist `TODO.md`/`PLAN.md`** — verifikasi ke kode dulu (lihat bagian 8b).
 15. **Logging wajib ikut bagian 5b.** Ringkasnya: log error **sekali** di handler, service hanya log **event**, `4xx` = `WARN` bukan `ERROR`, dan nilai sensitif wajib lewat `SanitizeArgs`. Sebelum menambah `logger.ErrorCtx` di service, tanya dulu: *"apakah error ini di-return?"* Kalau ya — **jangan** di-log di situ.
+16. **Setelah setiap `git push` → WAJIB ingatkan PR** beserta **judul** dan **body**-nya (bagian 12b). Jangan tutup respons dengan "selesai" tanpa menyebut PR. Push belum selesai sampai PR dibuat.
 
 ---
 
@@ -603,4 +604,67 @@ gh pr create --base dev --head dev-zacky --title "..." --body "..."
 - Base = `dev`, head = `dev-zacky`. **Jangan pernah** PR langsung ke `staging`/`main`.
 - Satu PR = satu concern. Jangan campur migrasi + refactor + docs dalam satu PR besar.
 - Setelah PR merged, `git checkout dev && git pull && git checkout dev-zacky && git merge dev` (biar branch kerja tetap sinkron).
+
+---
+
+### 12b. 🔔 WAJIB: SETELAH `git push` → LANGSUNG INGATKAN PR + KASIH JUDUL & BODY
+
+> **Aturan ini lahir dari kesalahan nyata (18 Okt 2026):** commit & push sudah jalan, tapi PR lupa
+> dibuat. Akibatnya pekerjaan menumpuk di `dev-zacky` dan tidak masuk `dev`.
+
+Setiap kali selesai `git push origin dev-zacky`, AI agent **WAJIB** langsung melakukan **5 hal** —
+tanpa diminta, tanpa menunggu pertanyaan berikutnya:
+
+| # | Wajib dilakukan |
+|---|---|
+| 1 | **Ingatkan eksplisit** — bukan sekadar menyebut. Contoh: *"⚠️ Sudah di-push. **Sekarang buka PR**: `dev-zacky` → `dev`."* |
+| 2 | **Kasih link siap klik** → `https://github.com/AchmadZackyGZ/Fluids/compare/dev...dev-zacky?expand=1` |
+| 3 | **Kasih JUDUL PR** dalam blok kode (tinggal copy-paste) |
+| 4 | **Kasih BODY PR** dalam blok `markdown` lengkap (template di 12c) |
+| 5 | **Sebut jumlah commit** yang akan masuk — jalankan `git log --oneline origin/dev..origin/dev-zacky` |
+
+**Larangan keras:**
+- ❌ Menutup respons dengan "selesai" tanpa menyebut PR.
+- ❌ Judul/body PR generik (`update`, `fix bug`, `dev-zacky`) — judul harus menjelaskan **apa yang berubah**.
+- ❌ Menganggap `push` = selesai. **Push belum selesai sampai PR dibuat.**
+- ❌ Body PR yang hanya memuji hasil — sebutkan juga yang **belum** dikerjakan.
+
+**Format judul PR:**
+```
+<tipe>(<scope>): <hasil, bukan aktivitas>
+```
+
+| ❌ Salah | ✅ Benar |
+|---|---|
+| `dev-zacky` | `feat(auth): complete auth flows (Step A–D)` |
+| `update code` | `fix(logger): stop password leak in structured logs` |
+| `fix bug` | `fix(user): map PasswordHash so change-password works` |
+
+**Checklist sebelum klik "Create pull request":**
+- [ ] Base = `dev`, compare = `dev-zacky`
+- [ ] Judul spesifik (bukan nama branch)
+- [ ] Body menyebut cara **verifikasi** (perintah + hasil)
+- [ ] Body menyebut yang **belum** dikerjakan
+- [ ] Daftar "files changed" bersih — tidak ada `.env`, `podman-error.txt`, atau file pribadi
+
+---
+
+### 12c. Template body PR
+
+```markdown
+## Ringkasan
+<2–3 kalimat: masalahnya apa, apa yang diubah>
+
+## Perubahan
+- **<area>**: <poin konkret>
+- ...
+
+## Verifikasi
+- [ ] `go build ./...` exit 0
+- [ ] `gofmt -l` bersih pada file yang diubah
+- [ ] <uji manual: perintah + hasil yang diamati>
+
+## Catatan
+- <yang belum dikerjakan / risiko / keputusan yang perlu direview>
+```
 
