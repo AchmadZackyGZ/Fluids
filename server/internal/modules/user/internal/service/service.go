@@ -81,6 +81,7 @@ func (s *userService) GetUserByID(ctx context.Context, idStr string) (*contracts
 		ID:            u.ID.String(),
 		Username:      u.Username,
 		Email:         u.Email,
+		PasswordHash:  u.PasswordHash, // dibutuhkan auth untuk verifikasi password lama
 		FullName:      u.FullName,
 		Bio:           u.Bio,
 		AvatarURL:     u.AvatarUrl,
