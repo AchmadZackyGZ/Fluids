@@ -15,28 +15,63 @@ var (
 	defaultLogger *slog.Logger
 )
 
-// SensitiveFields - daftar field yang WAJIB disensor (deny-list)
+// SensitiveFields - daftar field yang WAJIB disensor (deny-list eksak).
 // Key = lowercase field name
 var SensitiveFields = map[string]bool{
-	"password":        true,
-	"password_hash":   true,
-	"token":           true,
-	"access_token":    true,
-	"refresh_token":   true,
-	"authorization":   true,
-	"secret":          true,
-	"api_key":         true,
-	"apikey":          true,
-	"otp":             true,
-	"pin":             true,
-	"credit_card":     true,
-	"card_number":     true,
-	"cvv":             true,
-	"ssn":             true,
+	"password":      true,
+	"password_hash": true,
+	"token":         true,
+	"access_token":  true,
+	"refresh_token": true,
+	"authorization": true,
+	"secret":        true,
+	"api_key":       true,
+	"apikey":        true,
+	"otp":           true,
+	"pin":           true,
+	"credit_card":   true,
+	"card_number":   true,
+	"cvv":           true,
+	"ssn":           true,
+}
+
+// sensitiveFragments - pencocokan SUBSTRING, bukan eksak.
+//
+// Kenapa perlu: deny-list eksak di atas hanya menangkap "password" persis.
+// Field seperti "current_password", "new_password", "reset_token",
+// "verification_token" LOLOS dan nilainya tercetak utuh di log.
+// Itu pernah benar-benar terjadi di modul auth (password user bocor ke log).
+var sensitiveFragments = []string{
+	"password",
+	"token",
+	"secret",
+	"api_key",
+	"apikey",
+	"credential",
+	"private_key",
+}
+
+// isSensitiveKey menentukan apakah sebuah key log harus disensor.
+// Dicek eksak dulu, lalu substring sebagai jaring pengaman.
+func isSensitiveKey(key string) bool {
+	k := strings.ToLower(key)
+	if SensitiveFields[k] {
+		return true
+	}
+	for _, frag := range sensitiveFragments {
+		if strings.Contains(k, frag) {
+			return true
+		}
+	}
+	return false
 }
 
 // SanitizeArgs - filter sensitive fields dari args sebelum log
 // Usage: logger.InfoCtx(ctx, "msg", logger.SanitizeArgs("email", req.Email, "password", req.Password)...)
+//
+// CATATAN PENTING: fungsi ini OPT-IN. Log yang tidak memakai SanitizeArgs
+// TIDAK disensor otomatis. Karena itu jangan pernah menaruh nilai sensitif
+// di argumen log tanpa membungkusnya dengan fungsi ini.
 func SanitizeArgs(args ...any) []any {
 	if len(args)%2 != 0 {
 		return args // invalid key-value pairs, return as-is
@@ -44,7 +79,7 @@ func SanitizeArgs(args ...any) []any {
 	out := make([]any, 0, len(args))
 	for i := 0; i < len(args); i += 2 {
 		key, ok := args[i].(string)
-		if ok && SensitiveFields[strings.ToLower(key)] {
+		if ok && isSensitiveKey(key) {
 			out = append(out, key, "[REDACTED]")
 		} else {
 			out = append(out, args[i], args[i+1])
@@ -151,10 +186,10 @@ func ErrorCtx(ctx context.Context, msg string, args ...any) {
 type contextKey string
 
 const (
-	traceIDKey  contextKey = "trace_id"
-	spanIDKey   contextKey = "span_id"
+	traceIDKey   contextKey = "trace_id"
+	spanIDKey    contextKey = "span_id"
 	requestIDKey contextKey = "request_id"
-	userIDKey   contextKey = "user_id"
+	userIDKey    contextKey = "user_id"
 )
 
 func WithTraceID(ctx context.Context, traceID string) context.Context {

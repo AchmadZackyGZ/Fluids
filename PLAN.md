@@ -8,7 +8,8 @@
 > - `PLAN.md` (**file ini**) → keputusan arsitektur + roadmap. Ini acuan arah jangka panjang.
 > - `ARCHITECTURE_DOCUMENTATION.md` → referensi teknis detail arsitektur **aktual**.
 > - `AGENTS.md` → aturan kerja, konvensi, jebakan, status terkini.
-> - `TODO.md` → status task per-minggu.
+> - `TODO.md` → status task per-minggu (**ke depan**).
+> - `TASK_LOG.md` → riwayat task yang **sudah selesai** + protokol review/commit.
 
 ---
 

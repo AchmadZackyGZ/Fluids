@@ -1,7 +1,6 @@
 package http
 
 import (
-	"encoding/hex"
 	"errors"
 	"net/http"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/AchmadZackyGZ/fluids/server/internal/modules/auth/internal/service"
 	userContract "github.com/AchmadZackyGZ/fluids/server/internal/modules/user/contracts"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/logger"
+	"github.com/AchmadZackyGZ/fluids/server/internal/platform/security"
 	"github.com/AchmadZackyGZ/fluids/server/internal/platform/validator"
 	validatorpkg "github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
@@ -22,6 +22,95 @@ func NewAuthHandler(svc service.AuthService) *AuthHandler {
 	return &AuthHandler{svc: svc}
 }
 
+// ============================================================
+// Helper logging & keamanan
+// ============================================================
+
+// logAuthError mencatat kegagalan auth TEPAT SEKALI, dengan level yang sesuai
+// keparahan. Ini satu-satunya tempat error auth boleh dicatat — service hanya
+// mengembalikan error, tidak mencatatnya (lihat AGENTS.md bagian Logging).
+//
+// Aturan level:
+//   - 4xx yang berasal dari input/perilaku user (salah password, token
+//     kedaluwarsa, email sudah terdaftar, rate limit) -> WARN.
+//     Ini traffic normal, bukan insiden.
+//   - Sisanya (DB/Redis putus, bug) -> ERROR.
+func (h *AuthHandler) logAuthError(c echo.Context, msg string, err error, args ...any) {
+	ctx := c.Request().Context()
+	fields := append([]any{"error", err}, args...)
+
+	if isExpectedAuthError(err) {
+		logger.WarnCtx(ctx, msg, fields...)
+		return
+	}
+	logger.ErrorCtx(ctx, msg, fields...)
+}
+
+// isExpectedAuthError = error yang muncul karena input/perilaku user,
+// bukan karena infrastruktur gagal.
+func isExpectedAuthError(err error) bool {
+	var verrs validatorpkg.ValidationErrors
+	if errors.As(err, &verrs) {
+		return true
+	}
+
+	for _, sentinel := range []error{
+		service.ErrInvalidCredentials,
+		service.ErrInvalidRefreshToken,
+		service.ErrRefreshTokenExpired,
+		service.ErrTokenRevoked,
+		service.ErrEmailNotVerified,
+		service.ErrVerificationTokenInvalid,
+		service.ErrVerificationTokenExpired,
+		service.ErrResetTokenInvalid,
+		service.ErrResetTokenExpired,
+		service.ErrPasswordTooWeak,
+		service.ErrRateLimited,
+		service.ErrCurrentPasswordInvalid,
+		service.ErrAccountDeleted,
+		userContract.ErrUserNotFound,
+		userContract.ErrEmailAlreadyExists,
+		userContract.ErrUsernameAlreadyExists,
+	} {
+		if errors.Is(err, sentinel) {
+			return true
+		}
+	}
+	return false
+}
+
+// currentUserID mengambil user_id yang diset JWTMiddleWare dengan aman.
+//
+// Versi lama memakai c.Get("user_id").(string) tanpa cek "ok". Kalau
+// middleware tidak terpasang (atau gagal set), type assertion itu PANIC dan
+// seluruh request jadi 500. Sekarang jadi 401 yang benar.
+func currentUserID(c echo.Context) (string, bool) {
+	userID, ok := c.Get("user_id").(string)
+	if !ok || userID == "" {
+		return "", false
+	}
+	return userID, true
+}
+
+// maskToken menampilkan sebagian token untuk keperluan log tanpa membocorkan
+// isinya, dan aman untuk token pendek (versi lama req.Token[:8] PANIC kalau
+// token kurang dari 8 karakter).
+func maskToken(token string) string {
+	const keep = 8
+	if len(token) <= keep {
+		return "***"
+	}
+	return token[:keep] + "..."
+}
+
+func unauthorized(c echo.Context) error {
+	return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+}
+
+// ============================================================
+// Handler
+// ============================================================
+
 // POST /api/v1/auth/register
 func (h *AuthHandler) Register(c echo.Context) error {
 	var req service.RegisterReq
@@ -30,11 +119,11 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "register attempt", logger.SanitizeArgs("email", req.Email, "password", req.Password)...)
+	logger.DebugCtx(ctx, "register attempt", "email", req.Email)
 
 	user, err := h.svc.Register(ctx, req)
 	if err != nil {
-		logger.ErrorCtx(ctx, "register failed", logger.SanitizeArgs("error", err, "email", req.Email)...)
+		h.logAuthError(c, "register failed", err, "email", req.Email)
 		return h.mapError(c, err)
 	}
 
@@ -50,15 +139,16 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "login attempt", logger.SanitizeArgs("email", req.Email, "password", req.Password)...)
+	logger.DebugCtx(ctx, "login attempt", "email", req.Email)
 
 	res, err := h.svc.Login(ctx, req)
 	if err != nil {
-		logger.ErrorCtx(ctx, "login failed", logger.SanitizeArgs("error", err, "email", req.Email)...)
+		// Salah password itu traffic normal -> WARN, bukan ERROR.
+		h.logAuthError(c, "login failed", err, "email", req.Email)
 		return h.mapError(c, err)
 	}
 
-	logger.InfoCtx(ctx, "login success", "email", req.Email)
+	logger.InfoCtx(ctx, "login success", "user_id", res.User.ID, "email", req.Email)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status": "success",
 		"data":   res,
@@ -73,15 +163,15 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "refresh token attempt")
+	logger.DebugCtx(ctx, "refresh token attempt")
 
 	res, err := h.svc.RefreshToken(ctx, req)
 	if err != nil {
-		logger.ErrorCtx(ctx, "refresh token failed", "error", err)
+		h.logAuthError(c, "refresh token failed", err)
 		return h.mapError(c, err)
 	}
 
-	logger.InfoCtx(ctx, "refresh token success")
+	logger.InfoCtx(ctx, "refresh token success", "user_id", res.User.ID)
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"status": "success",
 		"data":   res,
@@ -90,7 +180,10 @@ func (h *AuthHandler) RefreshToken(c echo.Context) error {
 
 // POST /api/v1/auth/logout
 func (h *AuthHandler) Logout(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID, ok := currentUserID(c)
+	if !ok {
+		return unauthorized(c)
+	}
 
 	// Get refresh token from cookie or body
 	var req struct {
@@ -105,12 +198,12 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "logout attempt", "user_id", userID)
+	logger.DebugCtx(ctx, "logout attempt", "user_id", userID)
 
 	if req.RefreshToken != "" {
-		tokenHash := hashToken(req.RefreshToken)
+		tokenHash := security.HashToken(req.RefreshToken)
 		if err := h.svc.RevokeToken(ctx, userID, tokenHash); err != nil {
-			logger.ErrorCtx(ctx, "logout failed", "error", err, "user_id", userID)
+			h.logAuthError(c, "logout failed", err, "user_id", userID)
 			return h.mapError(c, err)
 		}
 	}
@@ -138,10 +231,10 @@ func (h *AuthHandler) ForgotPassword(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "forgot password attempt", "email", req.Email)
+	logger.DebugCtx(ctx, "forgot password attempt", "email", req.Email)
 
 	if err := h.svc.RequestPasswordReset(ctx, req); err != nil {
-		logger.ErrorCtx(ctx, "forgot password failed", "error", err, "email", req.Email)
+		h.logAuthError(c, "forgot password failed", err, "email", req.Email)
 		return h.mapError(c, err)
 	}
 
@@ -157,10 +250,10 @@ func (h *AuthHandler) VerifyEmail(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "verify email attempt", "token", req.Token[:8]+"...")
+	logger.DebugCtx(ctx, "verify email attempt", "token_preview", maskToken(req.Token))
 
 	if err := h.svc.VerifyEmail(ctx, req); err != nil {
-		logger.ErrorCtx(ctx, "verify email failed", "error", err)
+		h.logAuthError(c, "verify email failed", err)
 		return h.mapError(c, err)
 	}
 
@@ -176,10 +269,10 @@ func (h *AuthHandler) ResendVerification(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "resend verification attempt", "email", req.Email)
+	logger.DebugCtx(ctx, "resend verification attempt", "email", req.Email)
 
 	if err := h.svc.ResendVerification(ctx, req); err != nil {
-		logger.ErrorCtx(ctx, "resend verification failed", "error", err, "email", req.Email)
+		h.logAuthError(c, "resend verification failed", err, "email", req.Email)
 		return h.mapError(c, err)
 	}
 
@@ -195,10 +288,11 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "reset password attempt", logger.SanitizeArgs("token", req.Token[:8]+"...", "new_password", req.NewPassword)...)
+	logger.DebugCtx(ctx, "reset password attempt",
+		logger.SanitizeArgs("token_preview", maskToken(req.Token), "new_password", req.NewPassword)...)
 
 	if err := h.svc.ResetPassword(ctx, req); err != nil {
-		logger.ErrorCtx(ctx, "reset password failed", "error", err)
+		h.logAuthError(c, "reset password failed", err)
 		return h.mapError(c, err)
 	}
 
@@ -208,7 +302,10 @@ func (h *AuthHandler) ResetPassword(c echo.Context) error {
 
 // PATCH /api/v1/auth/change-password
 func (h *AuthHandler) ChangePassword(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID, ok := currentUserID(c)
+	if !ok {
+		return unauthorized(c)
+	}
 
 	var req contracts.ChangePasswordReq
 	if err := c.Bind(&req); err != nil {
@@ -216,10 +313,11 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "change password attempt", logger.SanitizeArgs("user_id", userID, "current_password", req.CurrentPassword, "new_password", req.NewPassword)...)
+	logger.DebugCtx(ctx, "change password attempt",
+		logger.SanitizeArgs("user_id", userID, "current_password", req.CurrentPassword, "new_password", req.NewPassword)...)
 
 	if err := h.svc.ChangePassword(ctx, userID, req); err != nil {
-		logger.ErrorCtx(ctx, "change password failed", "error", err, "user_id", userID)
+		h.logAuthError(c, "change password failed", err, "user_id", userID)
 		return h.mapError(c, err)
 	}
 
@@ -229,7 +327,10 @@ func (h *AuthHandler) ChangePassword(c echo.Context) error {
 
 // DELETE /api/v1/auth/account
 func (h *AuthHandler) DeleteAccount(c echo.Context) error {
-	userID := c.Get("user_id").(string)
+	userID, ok := currentUserID(c)
+	if !ok {
+		return unauthorized(c)
+	}
 
 	var req contracts.DeleteAccountReq
 	if err := c.Bind(&req); err != nil {
@@ -237,10 +338,11 @@ func (h *AuthHandler) DeleteAccount(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
-	logger.InfoCtx(ctx, "delete account attempt", logger.SanitizeArgs("user_id", userID, "password", req.Password)...)
+	logger.DebugCtx(ctx, "delete account attempt",
+		logger.SanitizeArgs("user_id", userID, "password", req.Password)...)
 
 	if err := h.svc.DeleteAccount(ctx, userID, req); err != nil {
-		logger.ErrorCtx(ctx, "delete account failed", "error", err, "user_id", userID)
+		h.logAuthError(c, "delete account failed", err, "user_id", userID)
 		return h.mapError(c, err)
 	}
 
@@ -248,19 +350,15 @@ func (h *AuthHandler) DeleteAccount(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "success", "message": "account deleted"})
 }
 
-// Helper function for token hashing (must match service)
-func hashToken(token string) string {
-	// Simple hash for key - must match service implementation
-	bytes := make([]byte, 32)
-	copy(bytes, token)
-	hash := make([]byte, 16)
-	for i := 0; i < 16; i++ {
-		hash[i] = bytes[i*2] ^ bytes[i*2+1]
-	}
-	return hex.EncodeToString(hash)
-}
+// ============================================================
+// Error mapping (MURNI pemetaan — TIDAK boleh logging)
+// ============================================================
 
-// handleAuthError memetakan error domain dan validasi menjadi HTTP Status Code yang presisi
+// mapError memetakan error domain dan validasi menjadi HTTP Status Code.
+//
+// Fungsi ini sengaja TIDAK mencatat log apa pun. Logging sudah dilakukan
+// sekali oleh logAuthError di masing-masing handler. Kalau di sini juga
+// logging, satu kegagalan akan tercatat dua kali (double-logging).
 func (h *AuthHandler) mapError(c echo.Context, err error) error {
 	var verrs validatorpkg.ValidationErrors
 	if errors.As(err, &verrs) {
@@ -304,8 +402,6 @@ func (h *AuthHandler) mapError(c echo.Context, err error) error {
 	case errors.Is(err, service.ErrCurrentPasswordInvalid):
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "current password invalid"})
 	default:
-		ctx := c.Request().Context()
-		logger.ErrorCtx(ctx, "auth error", "error", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "internal server error"})
 	}
 }
