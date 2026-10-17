@@ -28,27 +28,27 @@ type LoginReq struct {
 }
 
 type AuthResponse struct {
-	Token                  string    `json:"token"`
-	RefreshToken           string    `json:"refresh_token"`
-	AccessTokenExpiresAt   time.Time `json:"access_token_expires_at"`
-	RefreshTokenExpiresAt  time.Time `json:"refresh_token_expires_at"`
-	User                   *userContract.UserDTO `json:"user"`
+	Token                 string                `json:"token"`
+	RefreshToken          string                `json:"refresh_token"`
+	AccessTokenExpiresAt  time.Time             `json:"access_token_expires_at"`
+	RefreshTokenExpiresAt time.Time             `json:"refresh_token_expires_at"`
+	User                  *userContract.UserDTO `json:"user"`
 }
 
 var (
-	ErrInvalidCredentials      = errors.New("invalid email or password")
-	ErrInvalidRefreshToken     = errors.New("invalid refresh token")
-	ErrRefreshTokenExpired     = errors.New("refresh token expired")
-	ErrTokenRevoked            = errors.New("token has been revoked")
-	ErrEmailNotVerified        = errors.New("email not verified")
+	ErrInvalidCredentials       = errors.New("invalid email or password")
+	ErrInvalidRefreshToken      = errors.New("invalid refresh token")
+	ErrRefreshTokenExpired      = errors.New("refresh token expired")
+	ErrTokenRevoked             = errors.New("token has been revoked")
+	ErrEmailNotVerified         = errors.New("email not verified")
 	ErrVerificationTokenInvalid = errors.New("invalid verification token")
 	ErrVerificationTokenExpired = errors.New("verification token expired")
-	ErrResetTokenInvalid       = errors.New("invalid reset token")
-	ErrResetTokenExpired       = errors.New("reset token expired")
-	ErrPasswordTooWeak         = errors.New("password does not meet requirements")
-	ErrRateLimited             = errors.New("too many requests, please try again later")
-	ErrAccountDeleted          = errors.New("account has been deleted")
-	ErrCurrentPasswordInvalid  = errors.New("current password is incorrect")
+	ErrResetTokenInvalid        = errors.New("invalid reset token")
+	ErrResetTokenExpired        = errors.New("reset token expired")
+	ErrPasswordTooWeak          = errors.New("password does not meet requirements")
+	ErrRateLimited              = errors.New("too many requests, please try again later")
+	ErrAccountDeleted           = errors.New("account has been deleted")
+	ErrCurrentPasswordInvalid   = errors.New("current password is incorrect")
 )
 
 type AuthService interface {
@@ -207,10 +207,15 @@ func (s *authService) RequestPasswordReset(ctx context.Context, req contracts.Fo
 		return err
 	}
 
-	// TODO: Publish event to RabbitMQ for email sending
+	// DEV ONLY — memudahkan tes manual sebelum email worker ada (Step F).
+	// Aman karena level DEBUG tidak tampil pada LOG_LEVEL default (info).
+	// HAPUS blok ini begitu RabbitMQ + email worker aktif.
+	logger.DebugCtx(ctx, "dev token", "user_id", u.ID, "raw_token", resetToken)
+
+	// TODO(step-f): kirim email reset lewat RabbitMQ.
+	// platform/messaging belum ada — dikerjakan di Step F.
 	logger.InfoCtx(ctx, "password reset requested", "user_id", u.ID, "email", req.Email)
 
-	_ = resetToken // In real app, send via email
 	return nil
 }
 
@@ -232,12 +237,19 @@ func (s *authService) VerifyEmail(ctx context.Context, req contracts.VerifyEmail
 		return err
 	}
 
-	// Update user email_verified = true via userContract
-	// For now, we'll need to add a method to userContract or use a different approach
-	// Since userContract doesn't have UpdateEmailVerified, we'll log and return
-	// TODO: Add UpdateEmailVerified to userContract
+	// 1. Update DULU di database. Kalau ini gagal, token JANGAN dihapus
+	//    supaya user masih bisa mencoba lagi dengan token yang sama.
+	if err := s.userContract.UpdateEmailVerified(ctx, userID, true); err != nil {
+		logger.ErrorCtx(ctx, "failed to mark email as verified", "error", err, "user_id", userID)
+		return err
+	}
 
-	s.redisClient.Del(ctx, key)
+	// 2. Baru hapus token (sekali pakai).
+	if err := s.redisClient.Del(ctx, key).Err(); err != nil {
+		// Bukan kegagalan fatal: email sudah terverifikasi.
+		logger.ErrorCtx(ctx, "failed to delete verification token", "error", err, "user_id", userID)
+	}
+
 	logger.InfoCtx(ctx, "email verified", "user_id", userID)
 	return nil
 }
@@ -281,10 +293,15 @@ func (s *authService) ResendVerification(ctx context.Context, req contracts.Rese
 		return err
 	}
 
-	// TODO: Publish event to RabbitMQ for email sending
+	// DEV ONLY — memudahkan tes manual sebelum email worker ada (Step F).
+	// Aman karena level DEBUG tidak tampil pada LOG_LEVEL default (info).
+	// HAPUS blok ini begitu RabbitMQ + email worker aktif.
+	logger.DebugCtx(ctx, "dev token", "user_id", u.ID, "raw_token", verifyToken)
+
+	// TODO(step-f): kirim ulang email verifikasi lewat RabbitMQ.
+	// platform/messaging belum ada — dikerjakan di Step F.
 	logger.InfoCtx(ctx, "verification email resent", "user_id", u.ID, "email", req.Email)
 
-	_ = verifyToken // In real app, send via email
 	return nil
 }
 
@@ -306,19 +323,25 @@ func (s *authService) ResetPassword(ctx context.Context, req contracts.ResetPass
 		return err
 	}
 
-	// Hash new password
-	_, err = security.HashPassword(req.NewPassword)
+	// 1. Hash password baru — hasilnya HARUS dipakai.
+	newHash, err := security.HashPassword(req.NewPassword)
 	if err != nil {
+		logger.ErrorCtx(ctx, "failed to hash new password", "error", err, "user_id", userID)
 		return err
 	}
 
-	// Update user password (need to add method to userContract)
-	// For now, we'll delete the token and log
-	// TODO: Add UpdatePassword to userContract
+	// 2. Simpan ke database.
+	if err := s.userContract.UpdatePassword(ctx, userID, newHash); err != nil {
+		logger.ErrorCtx(ctx, "failed to update password", "error", err, "user_id", userID)
+		return err
+	}
 
-	s.redisClient.Del(ctx, key)
+	// 3. Password sudah berubah -> token reset hangus.
+	if err := s.redisClient.Del(ctx, key).Err(); err != nil {
+		logger.ErrorCtx(ctx, "failed to delete reset token", "error", err, "user_id", userID)
+	}
 
-	// Revoke all refresh tokens for this user
+	// 4. Semua sesi lama harus mati.
 	s.revokeAllUserTokens(ctx, userID)
 
 	logger.InfoCtx(ctx, "password reset successful", "user_id", userID)
@@ -341,21 +364,24 @@ func (s *authService) ChangePassword(ctx context.Context, userID string, req con
 		return ErrCurrentPasswordInvalid
 	}
 
-	// Hash new password
-	_, err = security.HashPassword(req.NewPassword)
+	// 1. Hash password baru.
+	newHash, err := security.HashPassword(req.NewPassword)
 	if err != nil {
+		logger.ErrorCtx(ctx, "failed to hash new password", "error", err, "user_id", userID)
 		return err
 	}
 
-	// Update user password (need to add method to userContract)
-	// TODO: Add UpdatePassword to userContract
+	// 2. Simpan ke database.
+	if err := s.userContract.UpdatePassword(ctx, userID, newHash); err != nil {
+		logger.ErrorCtx(ctx, "failed to update password", "error", err, "user_id", userID)
+		return err
+	}
 
-	// Revoke all refresh tokens for this user
+	// 3. Semua sesi lama harus mati — termasuk sesi di device lain.
 	s.revokeAllUserTokens(ctx, userID)
 
-	// Blacklist current access token
-	// Note: We'd need the current access token hash from context
-	// For now, just revoke refresh tokens
+	// Catatan: access token yang sedang aktif masih berlaku sampai 15 menit.
+	// Blacklist access token butuh token aslinya dari request context (dikerjakan di Step D).
 
 	logger.InfoCtx(ctx, "password changed", "user_id", userID)
 	return nil
@@ -377,13 +403,16 @@ func (s *authService) DeleteAccount(ctx context.Context, userID string, req cont
 		return ErrCurrentPasswordInvalid
 	}
 
-	// Soft delete: revoke all tokens
+	// 1. Soft delete dulu di database.
+	if err := s.userContract.DeleteAccount(ctx, userID); err != nil {
+		logger.ErrorCtx(ctx, "failed to soft delete account", "error", err, "user_id", userID)
+		return err
+	}
+
+	// 2. Baru cabut semua sesi.
 	s.revokeAllUserTokens(ctx, userID)
 
-	// TODO: Call userContract.DeleteAccount or UpdateDeletedAt
-	// For now, just revoke tokens
-
-	logger.InfoCtx(ctx, "account deleted (soft)", "user_id", userID)
+	logger.InfoCtx(ctx, "account soft-deleted", "user_id", userID)
 	return nil
 }
 
@@ -412,11 +441,11 @@ func (s *authService) issueTokens(ctx context.Context, u *userContract.UserDTO) 
 	logger.InfoCtx(ctx, "tokens issued", "user_id", u.ID)
 
 	return &AuthResponse{
-		Token:                  accessToken,
-		RefreshToken:           refreshToken,
-		AccessTokenExpiresAt:   accessExpiry,
-		RefreshTokenExpiresAt:  refreshExpiry,
-		User:                   u,
+		Token:                 accessToken,
+		RefreshToken:          refreshToken,
+		AccessTokenExpiresAt:  accessExpiry,
+		RefreshTokenExpiresAt: refreshExpiry,
+		User:                  u,
 	}, nil
 }
 
