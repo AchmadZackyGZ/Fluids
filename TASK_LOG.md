@@ -69,6 +69,8 @@ git checkout dev-zacky && git merge dev
 | T-015 | 2026-10-16 | **Step B** — buka `userContract` (3 method baru) | ✅ | `22aa2ca` | #26 |
 | T-016 | 2026-10-16 | `style(user)`: apply gofmt | ✅ | `5916bed` | #26 |
 | T-017 | 2026-10-17 | Sinkronisasi `dev` → `dev-zacky` setelah PR #26 merged | ✅ | `e71bb1e` | — |
+| T-018 | 2026-10-17 | **Step C** — sambungkan 5 stub auth ke `userContract` | ✅ | `09c7e26` | — |
+| T-019 | 2026-10-17 | 🔴 **Fix**: `PasswordHash` hilang di mapping `GetUserByID` | ✅ | `b050692` | — |
 
 ---
 
@@ -221,6 +223,54 @@ git checkout dev-zacky && git merge dev
   — hanya menyamakan branch kerja dengan branch integrasi. Ini konsekuensi **normal** dari alur sinkronisasi.
 - **Pelajaran:** "Push N commits" setelah `git merge dev` **bukan** tanda bahaya. Yang bahaya adalah kalau
   target push-nya `dev` / `staging` / `main`.
+
+### T-018 — Step C: sambungkan 5 stub auth ke `userContract`
+- **Tanggal:** 2026-10-17 · **Commit:** `09c7e26`
+- **Tujuan:** 5 method di `auth/service.go` masih stub — password tidak pernah tersimpan, email tidak pernah ter-verified.
+- **Yang dikerjakan:**
+  - `VerifyEmail` → `userContract.UpdateEmailVerified(true)`. **Update DB dulu, baru hapus token** — kalau DB gagal, token tidak terbakar.
+  - `ResetPassword` → pakai hasil hash (sebelumnya dibuang `_`), `UpdatePassword`, hapus token, revoke sesi.
+  - `ChangePassword` → sama; ditambah catatan kenapa access token aktif belum di-blacklist (butuh token asli dari context).
+  - `DeleteAccount` → `userContract.DeleteAccount` (soft delete) **dulu**, baru revoke sesi.
+  - 2 TODO RabbitMQ → `TODO(step-f)` supaya jelas sengaja ditunda, bukan lupa.
+  - **C5b** dev-only `logger.DebugCtx("dev token", "raw_token", ...)` di `RequestPasswordReset` & `ResendVerification` — agar alur bisa dites manual sebelum email worker ada. Aman: level DEBUG tidak tampil pada `LOG_LEVEL` default (`info`). **Wajib dihapus di Step F.**
+- **Verifikasi end-to-end (dijalankan AI, server `LOG_LEVEL=debug`):**
+
+| # | Endpoint | Payload | Hasil |
+|---|---|---|---|
+| 1 | `POST /api/v1/auth/register` | `{username, email, password:"Password123", full_name}` | 200, hash bcrypt tersimpan, `email_verified=f` |
+| 2 | `POST /api/v1/auth/forgot-password` | `{email}` | 200, token masuk Redis, `raw_token` muncul di log DEBUG |
+| 3 | `POST /api/v1/auth/reset-password` | `{token, new_password:"PasswordBaru456"}` | 200 — **hash DB berubah** `Li5Hmp3…` → `fWlVtza…` |
+| 4 | `POST /api/v1/auth/login` (password baru) | `{email, password:"PasswordBaru456"}` | **200** |
+| 5 | `POST /api/v1/auth/login` (password lama) | `{email, password:"Password123"}` | **401** |
+| 6 | `POST /api/v1/auth/resend-verification` | `{email}` | 200, token di log DEBUG |
+| 7 | `POST /api/v1/auth/verify-email` | `{token}` | 200 — `email_verified` **f → t** |
+| 8 | `DELETE /api/v1/auth/account` | `{password}` + Bearer | 200 — `deleted_at` **terisi** |
+| 9 | `POST /api/v1/auth/login` (setelah delete) | `{email, password}` | **401** |
+| 10 | `PATCH /api/v1/auth/change-password` | `{current_password, new_password}` + Bearer | 200; login password baru **200**, lama **401** |
+
+- **Catatan:** data user tes (`stepc.%@example.com`) dihapus lagi setelah pengujian.
+- **Temuan sampingan (belum dikerjakan):** semua kegagalan auth dicatat `logger.ErrorCtx` di
+  `auth/internal/delivery/http/handler.go` (11 tempat) — termasuk 401/404/409/429 yang **normal**.
+  Seharusnya `WARN`. Kalau `ERROR` untuk salah password, alert produksi menyala terus dan tim
+  berhenti mempercayainya. → kandidat task Step D.
+
+### T-019 — 🔴 Fix: `PasswordHash` hilang di mapping `GetUserByID`
+- **Tanggal:** 2026-10-17 · **Commit:** `b050692`
+- **Gejala:** `DELETE /api/v1/auth/account` dan `PATCH /api/v1/auth/change-password` **selalu** gagal
+  `{"error":"current password invalid"}` walau password yang dikirim benar. Login dengan password yang
+  sama justru **200**.
+- **Akar masalah:** `queries/users.sql` → `GetUserByID` **sudah** men-SELECT `password_hash`, dan
+  `gen.GetUserByIDRow` **punya** field `PasswordHash`. Tapi `userService.GetUserByID` **tidak**
+  memasukkannya ke `UserDTO` saat mapping. Jadi `UserDTO.PasswordHash` = `""`.
+- **Perbaikan:** tambah `PasswordHash: u.PasswordHash` di mapping + komentar alasannya.
+- **Kenapa `Login` tidak kena?** `Login` memakai `GetUserByEmail`, yang mapping-nya sudah menyertakan
+  `PasswordHash`. Hanya jalur `GetUserByID` yang bocor.
+- **Pelajaran:** compiler **tidak bisa** menangkap bug ini — kodenya valid, hanya nilainya kosong.
+  Yang menangkapnya adalah **uji end-to-end**: login 200 tapi change-password 401 adalah kontradiksi
+  yang mustahil dijelaskan selain oleh field yang hilang. **`go build` lolos ≠ aplikasi benar.**
+- **Pelajaran kedua:** saat mapping struct → DTO, bandingkan **satu per satu** field query dengan field
+  DTO. Field yang "ketinggalan" tidak memicu error apa pun.
 
 ---
 
