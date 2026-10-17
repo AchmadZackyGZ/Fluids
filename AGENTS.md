@@ -233,6 +233,135 @@ Prefix route: `/api/v1/auth`, `/api/v1/users`, `/api/v1/content`, `/api/v1/socia
 
 ---
 
+## 5b. ⚠️ ATURAN LOGGING — WAJIB DIBACA SEBELUM MENULIS `logger.*`
+
+> Bagian ini ditambahkan **17 Okt 2026** setelah ditemukan **double-logging** dan **password user bocor di log**
+> di modul `auth`. Aturan di bawah bersifat **preskriptif** — pelanggaran = PR ditolak.
+
+### 5b.1 Prinsip: log itu untuk OPERATOR, bukan untuk developer
+
+Setiap baris log harus menjawab: *"kalau saya melihat baris ini jam 3 pagi, apakah saya perlu bertindak?"*
+Kalau jawabannya **tidak**, jangan pakai `INFO` apalagi `ERROR`.
+
+### 5b.2 Di layer mana log apa (JANGAN TERTUKAR)
+
+| Layer | Boleh log? | Yang dicatat |
+|---|---|---|
+| `delivery/http` (handler) | ✅ | **Semua kegagalan — SEKALI**, + event sukses penting |
+| `service` | ✅ **hanya EVENT** | Event bisnis yang berhasil (`INFO`), kondisi mencurigakan (`WARN`) |
+| `service` | ❌ | **Error yang di-`return`** — jangan dicatat di sini |
+| `repository` | ❌ | Tidak pernah log. Hanya `return err` (di-map ke sentinel). |
+
+**Alasannya:** error merambat naik. Kalau setiap layer mencatatnya, satu kegagalan jadi 2–3 baris log.
+Handler adalah **batas sistem** — di situ konteks lengkap tersedia (user, endpoint, status HTTP).
+
+### 5b.3 Level ditentukan oleh KEPARAHAN, bukan berhasil/gagal
+
+> ❌ **SALAH:** "error → `ERROR`, success → `INFO`"
+> ✅ **BENAR:** level = seberapa besar operator harus peduli
+
+| Level | Pakai untuk | Contoh |
+|---|---|---|
+| `DEBUG` | detail debugging. **Mati di production** (`LOG_LEVEL=info`) | `"login attempt"`, `"tokens issued"` |
+| `INFO` | event bisnis berhasil — **maks 1 baris per request** | `"user registered"`, `"password changed"`, `"email verified"` |
+| `WARN` | mencurigakan / gagal tapi tertangani — **traffic normal** | salah password (401), token tidak ditemukan, rate limit, email sudah terdaftar (409) |
+| `ERROR` | kegagalan sistem, butuh manusia | Redis/DB putus, publish ke broker gagal, cleanup gagal di fungsi yang tidak return error |
+
+> 🔴 **4xx BUKAN ERROR.** `401`/`404`/`409`/`429` adalah hasil normal dari input user.
+> Kalau dicatat `ERROR`, alert `ERROR > 0` menyala terus → tim berhenti mempercayai alert.
+
+### 5b.4 Anti-pattern — semuanya pernah terjadi di project ini
+
+| ❌ Anti-pattern | Kenapa salah | ✅ Perbaikan |
+|---|---|---|
+| `logger.ErrorCtx(...)` lalu `return err` di service | Double-logging dengan handler | Hapus; cukup `return err` |
+| Logging di dalam `mapError` / mapper error | Fungsi mapping harus murni | Log di handler, mapper hanya memetakan |
+| `ErrorCtx` untuk salah password | 401 = traffic normal | `WarnCtx` |
+| `InfoCtx("login attempt")` tiap request | 2 baris per login, noise | `DebugCtx` |
+| `InfoCtx("login success")` + `InfoCtx("tokens issued")` | Dua log untuk satu event | Pilih satu |
+| Log `password`/`token` tanpa `SanitizeArgs` | **Kebocoran kredensial** | `SanitizeArgs` + `maskToken` |
+
+### 5b.5 Sanitasi WAJIB untuk data sensitif
+
+`SanitizeArgs()` bersifat **opt-in** — log yang tidak memakainya **tidak** disensor otomatis.
+
+```go
+// ❌ BOCOR — nilai asli masuk log
+logger.InfoCtx(ctx, "reset password attempt", "new_password", req.NewPassword)
+
+// ✅ AMAN
+logger.DebugCtx(ctx, "reset password attempt",
+    logger.SanitizeArgs("token_preview", maskToken(req.Token), "new_password", req.NewPassword)...)
+```
+
+Deny-list memakai **pencocokan substring** (`isSensitiveKey`): key yang *mengandung* `password`,
+`token`, `secret`, `api_key`, `apikey`, `credential`, `private_key` otomatis jadi `[REDACTED]`.
+Ini krusial karena `current_password` / `new_password` / `reset_token` **lolos** pencocokan eksak —
+dan itu benar-benar pernah membocorkan password user ke log.
+
+**Jangan pernah** menaruh token mentah di log. Kalau butuh jejak, pakai `maskToken()` (8 karakter + `...`).
+
+### 5b.6 Pola baku satu handler
+
+```go
+func (h *XHandler) Do(c echo.Context) error {
+    // 1. Ambil input — JANGAN c.Get("user_id").(string), itu PANIC kalau middleware absen
+    userID, ok := currentUserID(c)
+    if !ok {
+        return unauthorized(c)
+    }
+
+    ctx := c.Request().Context()
+
+    // 2. DEBUG: jejak masuk (tidak tampil di production)
+    logger.DebugCtx(ctx, "do attempt", "user_id", userID)
+
+    // 3. Panggil service
+    if err := h.svc.Do(ctx, userID); err != nil {
+        // 4. WARN/ERROR: SEKALI, level sesuai keparahan
+        h.logAuthError(c, "do failed", err, "user_id", userID)
+        return h.mapError(c, err)
+    }
+
+    // 5. INFO: event bisnis berhasil
+    logger.InfoCtx(ctx, "do success", "user_id", userID)
+    return c.JSON(http.StatusOK, map[string]any{"status": "success"})
+}
+```
+
+### 5b.7 Larangan keras
+
+1. ❌ `fmt.Println`, `log.Printf`, `log.Fatal` di dalam modul — **selalu** lewat `logger.*`
+2. ❌ `slog.Info(...)` langsung — pakai `logger.InfoCtx(ctx, ...)` supaya `trace_id`/`request_id` ikut
+3. ❌ Log di `repository`
+4. ❌ Log error yang di-`return` di `service`
+5. ❌ Nilai sensitif tanpa `SanitizeArgs`
+6. ❌ `ERROR` untuk status 4xx
+7. ❌ Lebih dari **satu** baris `INFO` untuk satu request yang sukses
+
+### 5b.8 Cara verifikasi (jangan asal percaya)
+
+```powershell
+# 1. Harus 0 hasil: tidak ada slog/fmt langsung di modul
+Select-String -Path server/internal/modules/*/internal/*/*.go -Pattern "slog\.|fmt\.Print|log\.Print"
+
+# 2. Service harus punya ErrorCtx JAUH lebih sedikit dari handler
+#    (ideal: 0, kecuali fungsi void yang tidak bisa melaporkan error ke caller)
+Select-String -Path server/internal/modules/*/internal/service/*.go -Pattern "logger.ErrorCtx"
+
+# 3. Picu error yang WAJAR (salah password) — log harus WARN, bukan ERROR
+$env:LOG_LEVEL="debug"; cd server; air
+# terminal lain:
+curl.exe -X POST http://localhost:8080/api/v1/auth/login `
+  -H "Content-Type: application/json" -d '{\"email\":\"x@y.com\",\"password\":\"salah\"}'
+
+# 4. Pastikan tidak ada password/token asli di log
+Select-String -Path <log-file> -Pattern '"(new_password|current_password|reset_token)":"[^[]'
+# harus 0 hasil
+```
+
+---
+
 ## 6. Infra lokal (Podman, Windows)
 
 Compose file: `deploy/podman/podman-compose.dev.yml`
@@ -442,6 +571,7 @@ Catatan teknis yang masih menggantung:
 12. **Kalau bikin modul baru**, wajib ikut struktur di bagian 4: `contracts/{errors.go, <nama>_contract.go}` + `internal/{delivery/http, service, repository, migrations}` + `module.go`, lalu daftarkan modulnya di `server/cmd/api/main.go`.
 13. **Sebelum mengecek pelanggaran arsitektur**, baca dulu bagian 4. Import yang diizinkan lintas modul **hanya** ke `contracts/`.
 14. **Jangan percaya checklist `TODO.md`/`PLAN.md`** — verifikasi ke kode dulu (lihat bagian 8b).
+15. **Logging wajib ikut bagian 5b.** Ringkasnya: log error **sekali** di handler, service hanya log **event**, `4xx` = `WARN` bukan `ERROR`, dan nilai sensitif wajib lewat `SanitizeArgs`. Sebelum menambah `logger.ErrorCtx` di service, tanya dulu: *"apakah error ini di-return?"* Kalau ya — **jangan** di-log di situ.
 
 ---
 
