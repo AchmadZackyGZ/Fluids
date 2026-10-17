@@ -71,6 +71,7 @@ git checkout dev-zacky && git merge dev
 | T-017 | 2026-10-17 | Sinkronisasi `dev` → `dev-zacky` setelah PR #26 merged | ✅ | `e71bb1e` | — |
 | T-018 | 2026-10-17 | **Step C** — sambungkan 5 stub auth ke `userContract` | ✅ | `09c7e26` | — |
 | T-019 | 2026-10-17 | 🔴 **Fix**: `PasswordHash` hilang di mapping `GetUserByID` | ✅ | `b050692` | — |
+| T-020 | 2026-10-17 | **Step D** — aturan logging + hardening auth (SHA-256, index per-user, anti-panic) | ✅ | `bef1d55`, `b75a2fb`, `6cecb01` | — |
 
 ---
 
@@ -271,6 +272,50 @@ git checkout dev-zacky && git merge dev
   yang mustahil dijelaskan selain oleh field yang hilang. **`go build` lolos ≠ aplikasi benar.**
 - **Pelajaran kedua:** saat mapping struct → DTO, bandingkan **satu per satu** field query dengan field
   DTO. Field yang "ketinggalan" tidak memicu error apa pun.
+
+### T-020 — Step D: aturan logging + hardening auth
+- **Tanggal:** 2026-10-17 · **Commit:** `bef1d55` (docs), `b75a2fb` (logger), `6cecb01` (auth)
+- **Latar belakang:** pemilik project menemukan **double-logging** di kode yang **saya sendiri berikan**
+  (`ErrorCtx` di service **dan** handler). Sekaligus minta aturannya dikunci di `AGENTS.md`.
+- **5 perbaikan:**
+
+| # | Masalah | Perbaikan |
+|---|---|---|
+| 1 | `service.go` 19× `ErrorCtx` + `handler.go` 11× → satu kegagalan Redis tercatat 2 baris | Service **tidak** log error yang di-`return`; handler log **sekali** via `logAuthError()` |
+| 2 | `login failed` (401) dicatat `ERROR`; `login attempt` + `login success` = 2 baris/request | `isExpectedAuthError()` → 4xx = `WARN`; `attempt` turun ke `DEBUG`; `mapError()` jadi murni tanpa log |
+| 3 | `hashToken` = XOR manual 32→16 byte (collision) + **duplikat** di service & handler | `platform/security.HashToken()` SHA-256, satu sumber |
+| 4 | `revokeAllUserTokens` = `SCAN refresh_token:*` seluruh keyspace (O(N)) | Redis SET `user_refresh_tokens:<userID>` (SAdd/SRem) → O(k) |
+| 5 | `c.Get("user_id").(string)` & `req.Token[:8]` → **panic** | `currentUserID()` + `maskToken()` |
+
+- **🔴 Bonus temuan — kebocoran kredensial:** deny-list `SanitizeArgs` hanya cocok **eksak**, jadi
+  `current_password` & `new_password` **lolos**. Terbukti di log server:
+  ```
+  "current_password":"Password123"
+  "new_password":"PasswordGanti789"
+  ```
+  Perbaikan: `isSensitiveKey()` mencocokkan **substring** (`password`, `token`, `secret`, `api_key`,
+  `apikey`, `credential`, `private_key`).
+- **🔴 Bonus temuan — logout tidak mencabut apa pun:** `RevokeToken()` menghash **ulang** `tokenHash`
+  yang dari handler **sudah** berupa hash → key tidak pernah cocok. Sekarang pakai hash apa adanya.
+- **Verifikasi (server `LOG_LEVEL=debug`):**
+
+| Uji | Hasil |
+|---|---|
+| Login password salah | `401`, log `severity=WARN` (bukan ERROR) |
+| `login attempt` | `severity=DEBUG` |
+| Ringkasan severity run | `DEBUG 3 · INFO 5 · WARN 1 · ERROR 0` |
+| `PATCH /change-password` | 200; log `"current_password":"[REDACTED]"`, `"new_password":"[REDACTED]"`; `grep Password123\|NewPass456` = **0** |
+| `POST /logout` lalu `POST /refresh` dengan token yang sama | **401** (dulu tetap 200) |
+| Redis index setelah login | `EXISTS=1`, `SCARD=1`, `TTL≈86400` |
+| `refresh` setelah change-password | **401** (semua sesi dicabut via index) |
+
+- **Dokumentasi:** `AGENTS.md` bagian **5b** (aturan logging lengkap: prinsip, tabel layer, tabel level,
+  anti-pattern, sanitasi, pola baku handler, 7 larangan, cara verifikasi) + aturan #15 di bagian 11.
+- **Pelajaran:** aturan yang hanya diucapkan di chat **mudah hilang**. Yang bertahan adalah aturan yang
+  **ditulis di repo** dan **punya perintah verifikasi**. Karena itu 5b.8 berisi `Select-String` yang bisa
+  dijalankan siapa pun untuk membuktikan kepatuhannya.
+- **Pelajaran kedua:** saya sendiri melanggar aturan yang saya ajarkan. Review harus mengecek **kode yang
+  baru ditulis**, bukan hanya kode orang lain.
 
 ---
 
