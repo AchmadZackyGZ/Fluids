@@ -71,7 +71,8 @@ git checkout dev-zacky && git merge dev
 | T-017 | 2026-10-17 | Sinkronisasi `dev` → `dev-zacky` setelah PR #26 merged | ✅ | `e71bb1e` | — |
 | T-018 | 2026-10-17 | **Step C** — sambungkan 5 stub auth ke `userContract` | ✅ | `09c7e26` | — |
 | T-019 | 2026-10-17 | 🔴 **Fix**: `PasswordHash` hilang di mapping `GetUserByID` | ✅ | `b050692` | — |
-| T-020 | 2026-10-17 | **Step D** — aturan logging + hardening auth (SHA-256, index per-user, anti-panic) | ✅ | `bef1d55`, `b75a2fb`, `6cecb01` | — |
+| T-020 | 2026-10-17 | **Step D** — aturan logging + hardening auth (SHA-256, index per-user, anti-panic) | ✅ | `bef1d55`, `b75a2fb`, `6cecb01` | #27 |
+| T-021 | 2026-10-18 | **Step E** — unit test otomatis (35 test: auth service, security, logger) | ✅ | *(lihat git log)* | — |
 
 ---
 
@@ -316,6 +317,52 @@ git checkout dev-zacky && git merge dev
   dijalankan siapa pun untuk membuktikan kepatuhannya.
 - **Pelajaran kedua:** saya sendiri melanggar aturan yang saya ajarkan. Review harus mengecek **kode yang
   baru ditulis**, bukan hanya kode orang lain.
+
+### T-021 — Step E: unit test otomatis
+- **Tanggal:** 2026-10-18 · **Status:** ✅ 35 test lolos
+- **Tujuan:** semua bug Step C/D sebelumnya ditemukan lewat **uji manual**. Uji manual tidak mencegah
+  regresi — kalau kode diubah lagi, bug yang sama bisa kembali tanpa ketahuan. Test otomatis mengunci perilaku.
+- **Dependency baru:** `github.com/alicebob/miniredis/v2` (Redis in-memory), `github.com/stretchr/testify`
+  (assertion). Tidak butuh Docker/Podman — `go test` jalan tanpa container.
+
+| Package | File | Test | Coverage |
+|---|---|---|---|
+| `platform/security` | `token_test.go`, `password_test.go` | 11 | 14.3%* |
+| `platform/logger` | `sanitize_test.go` | 7 | 12.1%* |
+| `auth/internal/service` | `service_test.go` | 17 | **67.3%** |
+
+> \* Persentase package terlihat kecil karena package itu juga berisi `jwt.go`, `middleware.go`,
+> `logger.go` yang belum diuji. Fungsi yang diuji (`HashToken`, `HashPassword`, `SanitizeArgs`) tercakup penuh.
+
+- **Test regresi (mengunci bug yang pernah terjadi):**
+
+| Test | Mengunci bug |
+|---|---|
+| `TestHashToken_TidakCollisionPadaPrefixSama` | XOR lama hanya baca 32 byte pertama → collision |
+| `TestCheckPasswordHash_HashKosong` | `PasswordHash` kosong harus `false`, bukan panic |
+| `TestSanitizeArgs_SensorVarianPassword` | `current_password` / `new_password` dulu **bocor** ke log |
+| `TestSanitizeArgs_SensorVarianToken` | `reset_token` / `verification_token` dulu lolos |
+| `TestVerifyEmail_UpdateDBGagalTokenTidakTerhapus` | urutan operasi: token jangan terhapus kalau DB gagal |
+| `TestResetPassword_MenyimpanHashBaru` | hash dibuang `_` → password tidak pernah berubah |
+| `TestChangePassword_MencabutSemuaSesi` | index per-user harus mencabut semua device |
+| `TestRevokeToken_BenarBenarMencabut` | double-hash → logout tidak mencabut apa pun |
+| `TestLogin_EmailTidakAdaTidakBocorkanKeberadaanEmail` | jangan bedakan error email-tidak-ada vs password-salah |
+
+- **Cara isolasi tanpa container:** `userContract` diganti `fakeUserContract` (implementasi interface yang
+  mencatat setiap pemanggilan + bisa di-inject error), dan Redis diganti `miniredis` (in-memory).
+  Pola ini yang dipakai di industri untuk unit test service.
+- **Verifikasi:**
+  ```
+  go test ./... -count=1        -> ok (3 package, 35 test)
+  go vet ./...                  -> exit 0
+  ```
+- **Belum bisa:** `go test -race` — butuh cgo/gcc, tidak tersedia di Windows ini. Jalankan di CI/Linux.
+- **Makefile:** tambah target `make test` dan `make test-cover`.
+- **Pelajaran:** test regresi harus **gagal di kode lama**. Kalau sebuah test tetap lolos setelah bug
+  dikembalikan, test itu tidak mengunci apa pun. Untuk bug double-hash & hash-dibuang, test-nya dibuat
+  dengan sengaja meng-assert perilaku yang **tidak mungkin** terjadi di kode lama.
+- **Pelajaran kedua:** `miniredis` + fake contract membuat test jalan dalam hitungan detik tanpa Docker.
+  Ini yang membuat test **benar-benar dijalankan**, bukan ditinggalkan karena "terlalu ribet".
 
 ---
 
