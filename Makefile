@@ -23,7 +23,7 @@ PG_CONTAINER=fluids-postgres
 PG_USER=fluids_admin
 PG_DB=fluids_db
 
-.PHONY: help dev-infra infra-down infra-logs infra-status dev-server dev-web dev-ml gen migrate-up migrate-down migrate-status build-all clean destroy
+.PHONY: help dev-infra infra-down infra-logs infra-status dev-server dev-web dev-ml gen migrate-up migrate-down migrate-status build-all test test-cover clean destroy
 
 # ---------------------------------------------------------------------------
 # Bantuan
@@ -50,6 +50,8 @@ help:
 	@echo.
 	@echo [Verifikasi]
 	@echo   make build-all        Build backend + frontend
+	@echo   make test             Jalankan semua unit test
+	@echo   make test-cover       Unit test + laporan coverage
 	@echo.
 	@echo [Hati-hati]
 	@echo   make clean            Matikan container (data AMAN)
@@ -118,6 +120,16 @@ build-all:
 	cd web && npx -y pnpm@9.0.0 run build
 	@echo.
 	@echo Semua build OK.
+
+test:
+	cd server && go test ./... -count=1
+
+test-cover:
+	cd server && go test ./... -count=1 -coverprofile=coverage.out
+	cd server && go tool cover -func=coverage.out
+	@echo.
+	@echo File detail: server/coverage.out
+	@echo Buka HTML  : cd server ^&^& go tool cover -html=coverage.out
 
 # ---------------------------------------------------------------------------
 # Berbahaya — baca dulu
