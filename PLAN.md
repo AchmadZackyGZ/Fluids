@@ -2,13 +2,14 @@
 
 > **Source of truth** untuk arsitektur, stack, roadmap, dan konvensi project.
 > Update file ini setiap keputusan arsitektur baru (ADR style).
-> Last updated: 2026-10-15
+> Last updated: 2026-11-24
 
 > **Peran dokumen** (jangan tumpang tindih):
+> - `aturanFluidsAi.md` → peran mentor, aturan keras, workflow dual-boot Windows ↔ Debian, prioritas terkini.
 > - `PLAN.md` (**file ini**) → keputusan arsitektur + roadmap. Ini acuan arah jangka panjang.
 > - `ARCHITECTURE_DOCUMENTATION.md` → referensi teknis detail arsitektur **aktual**.
-> - `AGENTS.md` → aturan kerja, konvensi, jebakan, status terkini.
-> - `TODO.md` → status task per-minggu (**ke depan**).
+> - `AGENTS.md` → aturan kerja, konvensi, logging §5b, jebakan, protokol PR §12b.
+> - `TODO.md` → status task & sprint focus (**ke depan**).
 > - `TASK_LOG.md` → riwayat task yang **sudah selesai** + protokol review/commit.
 
 ---
@@ -43,9 +44,9 @@ Sesuai keputusan pemilik project:
 | **Multi-client** | Shared OpenAPI spec (`shared/openapi/`) + Protobuf (`shared/proto/`) | Generate TS (Web) & Dart (Mobile) SDK otomatis |
 | **Observability** | OpenTelemetry → Grafana Alloy → Loki + Tempo + Prometheus | Lihat ADR-008 & ADR-010 |
 
-> ⚠️ **Status realitas (15 Okt 2026):** yang **sudah jalan** = REST + modular monolith + Postgres + Redis + `slog`.
-> Sisanya (GraphQL, gRPC, WS, Webhook, RabbitMQ, Kafka, OTel) = **rencana**, belum ada kodenya.
-> Lihat `AGENTS.md` bagian 8b untuk daftar lubang terkonfirmasi.
+> ⚠️ **Status realitas (24 Nov 2026):** yang **sudah jalan** = REST + modular monolith + Postgres + Redis + `slog` + Auth Step A–E (35 unit test PASS).
+> Sisanya (GraphQL, gRPC, WS, Webhook, RabbitMQ, Kafka, MinIO storage client, OTel) = **rencana**, belum ada kodenya.
+> Lihat `AGENTS.md` bagian 8b untuk daftar bug & utang teknis terkonfirmasi.
 
 ---
 
@@ -55,13 +56,15 @@ Sesuai keputusan pemilik project:
 
 ```
 Fluids/
+├── aturanFluidsAi.md                ← Aturan mentor, workflow dual-boot, prioritas kerja
 ├── PLAN.md                          ← THIS FILE
-├── AGENTS.md                        ← Konteks + aturan kerja untuk AI agent
+├── AGENTS.md                        ← Konteks + aturan kerja + logging §5b + PR §12b
 ├── ARCHITECTURE_DOCUMENTATION.md    ← Referensi teknis arsitektur aktual
-├── TODO.md                          ← Status task per-minggu
+├── TODO.md                          ← Status task & sprint focus
+├── TASK_LOG.md                      ← Riwayat task selesai
 ├── IDEA.md                          ← Ringkasan ide (1 paragraf)
 ├── GEMINI.md                        ← Pointer ke design-tokens
-├── Makefile                         ← Entry point dev (pakai podman-compose)
+├── Makefile                         ← Entry point dev (pakai podman-compose, cmd.exe-safe)
 ├── .agents/rules/design-tokens.md   ← SOURCE OF TRUTH UI styling (web sudah final)
 ├── deploy/
 │   └── podman/
@@ -101,7 +104,7 @@ Fluids/
 │   ├── pyproject.toml               ✅ (ada, belum di-install)
 │   └── uv.lock                      ✅
 ├── shared/
-│   ├── openapi/                     ← ✅ ada (masih `openapi.yaml`, belum per-modul)
+│   ├── openapi/                     ← ✅ ada (masih `openapi.yaml`, baru 2 path usang)
 │   │   └── openapi.yaml
 │   ├── proto/                       ← 🔜 Protobuf-first (buf managed) — BELUM ADA
 │   │   ├── buf.yaml / buf.lock
@@ -116,17 +119,17 @@ Fluids/
 
 ## 4. Modul Backend — Current & Planned
 
-> ⚠️ Status di bawah **diverifikasi ke kode** (15 Okt 2026), bukan dari checklist.
-> `✅ Done` = benar-benar jalan & terverifikasi. `🟡 Partial` = ada kode tapi masih stub.
+> ⚠️ Status di bawah **diverifikasi ke kode** (24 Nov 2026), bukan dari checklist.
+> `✅ Done` = benar-benar jalan & terverifikasi. `🟡 Partial` = jalan tapi masih ada gap/hotfix terbuka.
 
 | Modul | Status | Prefix | Contracts | gRPC | WS | Event Producer | Event Consumer |
 |-------|--------|--------|-----------|------|----|----------------|----------------|
-| `auth` | 🟡 Partial (5 stub) | `/api/v1/auth` | ✅ `auth_contract.go` | ❌ | ❌ | 🔜 `user.registered`, `user.logged_in` | — |
-| `user` | ✅ Done (kontrak minim) | `/api/v1/users` | ✅ `user_contract.go` (3 method) | ❌ | ❌ | 🔜 `profile.updated` | 🔜 `user.registered` → init embedding |
-| `content` | ✅ Done | `/api/v1/content` | ✅ `content_contract.go` | ❌ | ❌ | 🔜 `post.created`, `post.deleted` | — |
-| `social` | ✅ Done | `/api/v1/social` | ✅ `social_contract.go` | ❌ | ❌ | 🔜 `user.followed`, `post.bookmarked` | 🔜 `post.created` → fan-out feed |
-| `notification` | ✅ Done | `/api/v1/notifications` | ✅ `notification_contract.go` | 🔜 | 🔜 | 🔜 `notification.created` | 🔜 `user.followed`, `post.liked`, `comment.created` |
-| `reco` | 🟡 Skeleton (no ML) | `/api/v1/reco` | ❌ (belum di-consume) | 🔜 | ❌ | 🔜 `embedding.updated` | 🔜 `post.created` → index, `user.action` → retrain |
+| `auth` | ✅ Step A–E selesai (sisa Step F + hotfix JWT 15m/envelope) | `/api/v1/auth` (10 route) | ✅ `auth_contract.go` *(duplikasi `service.Err*` belum dibersihkan)* | ❌ | ❌ | 🔜 `user.registered`, `user.logged_in`, email reset/verify | — |
+| `user` | ✅ Kontrak 6 method (route baru `GET /me`) | `/api/v1/users` (1 route) | ✅ `user_contract.go` (6 method) | ❌ | ❌ | 🔜 `profile.updated` | 🔜 `user.registered` → init embedding |
+| `content` | 🟡 Jalan (perlu hotfix IDOR `UpdatePostCaption` + safe `user_id`) | `/api/v1/content` (9 route) | ✅ `content_contract.go` | ❌ | ❌ | 🔜 `post.created`, `post.deleted` | — |
+| `social` | ✅ Jalan *(catatan: `social.sql` masih `UPDATE users` langsung)* | `/api/v1/social` (11 route) | ✅ `social_contract.go` | ❌ | ❌ | 🔜 `user.followed`, `post.bookmarked` | 🔜 `post.created` → fan-out feed |
+| `notification` | ✅ Jalan | `/api/v1/notifications` (4 route) | ✅ `notification_contract.go` | 🔜 | 🔜 | 🔜 `notification.created` | 🔜 `user.followed`, `post.liked`, `comment.created` |
+| `reco` | 🟡 Skeleton (no ML, dummy 128d vector) | `/api/v1/reco` (1 route) | ❌ (belum di-consume) | 🔜 | ❌ | 🔜 `embedding.updated` | 🔜 `post.created` → index, `user.action` → retrain |
 | `stories` | 📋 Planned | `/api/v1/stories` | ✅ (buat saat implement) | ❌ | ✅ | 🔜 `story.created`, `story.viewed` | — |
 | `chat` | 📋 Planned | `/api/v1/chat` | ✅ (buat saat implement) | ✅ | ❌ (gRPC streaming) | 🔜 `message.sent`, `conversation.created` | — |
 | `settings` | 📋 Planned | `/api/v1/settings` | ✅ (buat saat implement) | ❌ | ❌ | 🔜 `settings.changed` | — |
@@ -135,13 +138,10 @@ Fluids/
 > **Rule**: Modul baru **wajib** punya `contracts/{errors.go, <modul>_contract.go}` sebelum implementation.
 > Semua kolom gRPC/WS/Event = **rencana**, belum ada kode. `🔜` = belum diimplementasikan.
 
-> 🔴 **Hutang teknis `auth` (prioritas #1 saat ini):**
-
-> - 5 method stub: `VerifyEmail` (email tidak diupdate), `ResetPassword` & `ChangePassword` (**password tidak pernah berubah**), `DeleteAccount` (tidak soft-delete), publish event email
-> - `auth/internal/repository/` & `auth/internal/migrations/` **belum ada** — persistensi 100% inline Redis
-> - `userContract` cuma 3 method → akar masalah. Butuh `UpdatePassword`, `UpdateEmailVerified`, `DeleteAccount`
-> - Skema `users` belum punya `email_verified` & `deleted_at`
-> - `hashToken` = XOR manual (bukan SHA-256); `revokeAllUserTokens` = SCAN seluruh keyspace O(N)
+> ℹ️ **Status `auth` (update 24 Nov 2026):** Step A–E sudah selesai & terverifikasi 35 unit test (`TASK_LOG.md` T-013 s/d T-021). Yang tersisa di `auth` & `security`:
+> - **Hotfix segera:** expiry JWT di `security/jwt.go` masih `24h` (target `15m`), response `Register` masih flat (tidak selaras dengan `Login`/`AuthFormCard.tsx`).
+> - **Step F:** 2 `TODO(step-f)` RabbitMQ + hapus log `dev token` DEBUG.
+> - **Utang terkonfirmasi:** `auth/internal/repository/` & `migrations/` belum ada (persistensi di Redis), duplikasi `service.Err*` vs `contracts.Err*`, HttpOnly cookie belum diset di `Login`/`Register`, blacklist access token belum ditegakkan.
 
 ---
 
@@ -254,21 +254,17 @@ server/internal/platform/logger/
 > 🔜 **Rencana**: pecah helper context ke `context.go` terpisah + tambah `WithTraceID`
 > (setelah OpenTelemetry masuk). Sekarang masih digabung di `logger.go`.
 
-### Usage Pattern
+### Usage Pattern (mengikuti `AGENTS.md` §5b)
 ```go
-// Handler
+// Handler — DEBUG untuk attempt, WARN/ERROR sekali saat gagal, INFO sekali saat sukses
 func (h *AuthHandler) Register(c echo.Context) error {
     ctx := c.Request().Context()
-    logger.InfoCtx(ctx, "register attempt", "email", req.Email)
+    logger.DebugCtx(ctx, "register attempt", "email", req.Email)
     // ...
-    logger.InfoCtx(ctx, "user registered", "user_id", user.ID)
+    logger.InfoCtx(ctx, "user registered", "user_id", user.User.ID)
 }
 
-// Service
-func (s *authService) Register(ctx context.Context, req RegisterReq) (*UserDTO, error) {
-    logger.InfoCtx(ctx, "hashing password")
-    // ...
-}
+// Service — JANGAN log error yang di-return; hanya event sukses atau WARN non-fatal
 ```
 
 ### Integration Points
@@ -370,96 +366,73 @@ shared/events/           ← 🔜 Event schemas (JSON/Protobuf) — BELUM ADA
 
 ## 9. Development Workflow (Branch & Commit)
 
+Disahkan **24 Nov 2026** (lihat ADR-013):
+
 ```
-main       ← Production (protected, PR only)
+main       ← Rilis stabil / portfolio showcase (PR only, per milestone)
   ↑ PR
-staging    ← Pre-prod QA (protected, PR only)
+dev        ← Integrasi selalu hijau: build + test pass (PR only, per concern)
   ↑ PR
-dev        ← Team integration (protected, PR only)
-  ↑ PR
-dev-zacky  ← Daily work branch (KAMU DI SINI)
+dev-zacky  ← Daily work branch + sinkronisasi dual-boot Windows ↔ Debian
 ```
 
 **Rules:**
 - Semua coding & testing di `dev-zacky`.
-- Naik ke atas **hanya lewat PR** — tidak pernah push langsung.
+- Naik ke atas **hanya lewat PR** — tidak pernah push langsung ke `dev`/`main`.
+- `staging` belum dipakai selama fase lokal/solo (belum ada environment QA terpisah); akan dibuat saat fase CI/CD & deployment.
 - Commit message: Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`).
-- Pre-commit: `gofmt` (file yang diubah), `golangci-lint`, `pnpm lint` (web).
+- Pre-commit: `gofmt -w` (hanya file yang diubah), `go build ./...`, `go test ./... -count=1`.
 
 ---
 
 ## 10. Roadmap & Milestones
 
-> ⚠️ **Estimasi minggu di bawah = target, bukan janji.** Realitas 15 Okt 2026: Week 1 **belum tuntas**
-> (auth masih 5 stub). Lihat `TODO.md` → "Current Sprint Focus" untuk urutan prioritas yang benar.
+> ⚠️ **Estimasi minggu di bawah = target, bukan janji.** Realitas **24 Nov 2026**: Auth Step A–E sudah tuntas (35 unit test PASS); sekarang masuk **Hotfix Keamanan & Kontrak** → **User Profile + MinIO** → **Step F RabbitMQ**. Lihat `TODO.md` → "Current Sprint Focus".
 
 | Week | Phase | Focus | Deliverable |
 |------|-------|-------|-------------|
-| **1** | **Foundation** | Auth Phase 1 (**selesaikan stub dulu**) + RabbitMQ + Event `user.registered` | Migrasi `email_verified`/`deleted_at`, extend `userContract`, refresh/logout/forgot/verify/reset **benar-benar jalan** + publisher |
-| **2** | **User Profile** | Profile lengkap + GraphQL Gateway skeleton + DataLoader | `GET /users/:username`, `PATCH /me`, `POST /me/avatar` + `/graphql` playground |
+| **1** | **Foundation** | Auth Step A–E (**✅ selesai**) + **Hotfix Keamanan & Kontrak** + Step F RabbitMQ | JWT 15m, IDOR fix, envelope konsisten, publisher + welcome email |
+| **2** | **User Profile** | Profile lengkap + MinIO storage (`platform/storage/`) + OpenAPI sync | `GET /users/:username`, `PATCH /me`, `POST /me/avatar`, `openapi.yaml` sinkron |
 | **3** | **Protobuf & gRPC** | `shared/proto/` setup, `reco`, `chat`, `notification` proto + Buf CI | `buf generate` Go/Dart/TS, breaking check CI |
-| **4** | **gRPC Server + WS Hub** | `reco` gRPC server stub, generic WS hub platform | `reco` gRPC impl, `ws.Register()` untuk stories/notification |
+| **4** | **gRPC Server + WS Hub** | `reco` gRPC server stub, generic WS hub platform, GraphQL Gateway skeleton (Web only) | `reco` gRPC impl, `ws.Register()`, `/graphql` + DataLoader |
 | **5** | **Stories + Kafka** | Stories modul (REST + WS live viewers), Kafka event log `user.actions` | `POST/GET /stories`, WS viewers, `user.actions` → Kafka |
 | **6** | **Chat + Notification Real-time** | Chat gRPC streaming, Notification WS/SSE | `chat` streaming, `notification` real-time in-app |
 | **7** | **ML Integration** | Python ML gRPC client, Reco Explore ranked | `reco` call ML service, `/explore` return personalized |
 | **8** | **Hardening** | Tests, Observability, Docs, OpenAPI sync | `go test ./...`, `pnpm test`, OTel, OpenAPI spec updated |
-| **9+** | **Webhook + Mobile + Observability Prod** | Webhook outbound, Flutter mobile, Grafana stack penuh | Webhook dispatcher, app mobile, Alloy→Loki/Tempo/Prometheus dashboard |
+| **9+** | **Webhook + Mobile + Observability Prod** | Webhook outbound, Flutter mobile, Grafana stack penuh, branch `staging` | Webhook dispatcher, app mobile, Alloy→Loki/Tempo/Prometheus dashboard |
 
 > **Catatan**: Minggu 1–2 bisa dijalanin paralel kalau bandwidth cukup. Minggu 3+ butuh sequential (proto → server → client).
 
 ---
 
-## 11. Immediate Next Steps (PRIORITAS 15 Okt 2026)
+## 11. Immediate Next Steps (PRIORITAS 24 Nov 2026)
 
-> 🔴 **Rantai akar masalah** — perbaiki **dari bawah ke atas**:
-> ```
-> skema users kurang kolom email_verified + deleted_at
->         ↓
-> userContract cuma 3 method (tanpa UpdatePassword / UpdateEmailVerified / DeleteAccount)
->         ↓
-> 5 method auth jadi stub (VerifyEmail, ResetPassword, ChangePassword, DeleteAccount, publish event)
-> ```
+> ✅ **Step A–E (Auth) SUDAH SELESAI & MERGED ke `dev`** (PR #26–#28; lihat `TASK_LOG.md` T-013 s/d T-021):
+> - Step A: Migrasi `0003` (`email_verified` & `deleted_at`) ✅
+> - Step B: Extend `UserContract` jadi 6 method ✅
+> - Step C: Sambungkan 5 stub auth ke `userContract` ✅
+> - Step D: Aturan logging §5b + sanitasi substring + SHA-256 `HashToken` + Redis SET index per-user + `currentUserID()`/`maskToken()` ✅
+> - Step E: 35 unit & regression test (`miniredis` + `testify`) ✅
 
-### Urutan kerja yang benar (satu unit = satu commit + satu PR)
+### Urutan kerja berikutnya (disahkan 24 Nov 2026 — satu concern = satu PR)
 
-**Step A — Migrasi skema `users`** (modul `user`, file baru `0003`)
-1. `server/internal/modules/user/internal/migrations/0003_add_email_verified_deleted_at.up.sql`
-   → `ALTER TABLE users ADD COLUMN email_verified BOOLEAN NOT NULL DEFAULT FALSE;`
-   → `ALTER TABLE users ADD COLUMN deleted_at TIMESTAMPTZ;`
-2. File `.down.sql` → `ALTER TABLE users DROP COLUMN ...` (rollback)
-3. Jalankan `bash server/scripts/migrate.sh up`, verifikasi kolom muncul
+**Prioritas #1 — Hotfix Keamanan & Kontrak (PR tersendiri sebelum fitur baru)**
+1. `server/internal/platform/security/jwt.go`: ubah expiry JWT `24 * 1 * time.Hour` → `15 * time.Minute` + tambah unit test expiry di `security`.
+2. `server/internal/modules/content/internal/delivery/http/handler.go`: tambah ownership check (`post.AuthorID != userID` → `403`) di `UpdatePostCaption` + amankan 8× `c.Get("user_id").(string)` dengan helper `, ok` → `401`.
+3. `server/internal/modules/auth/internal/delivery/http/handler.go`: samakan response envelope `Register` (`{"status":"success","data":user}`) agar konsisten dengan `Login`/`RefreshToken` dan `AuthFormCard.tsx` berhasil menyimpan `fluids_token`.
+4. `deploy/podman/podman-compose.dev.yml`: perbaiki healthcheck MinIO dari `curl` → `["CMD","mc","ready","local"]`.
 
-**Step B — Extend `userContract`**
-1. `user/contracts/user_contract.go` → tambah 3 method ke `UserContract`:
-   `UpdatePassword`, `UpdateEmailVerified`, `DeleteAccount`
-2. Tambah DTO/Req yang dibutuhkan di file yang sama
-3. `user/internal/repository/queries/users.sql` → query baru → `sqlc generate`
-4. Implementasi di `user/internal/repository/postgres.go` + `user/internal/service/service.go`
+**Prioritas #2 — User Profile Endpoints + MinIO Storage**
+1. `server/internal/platform/storage/minio.go` (client + presigned URL/upload).
+2. Extend `user` module: `GET /api/v1/users/:username`, `PATCH /api/v1/users/me` (selaraskan dengan `App.tsx`), `POST /api/v1/users/me/avatar`.
+3. Rapikan logging `user/handler.go` sesuai `AGENTS.md` §5b + unit test `user/service`.
 
-**Step C — Sambungkan 5 stub auth service**
-1. `VerifyEmail` → panggil `userContract.UpdateEmailVerified(ctx, userID)`
-2. `ResetPassword` → panggil `userContract.UpdatePassword(ctx, userID, newHash)`
-3. `ChangePassword` → idem
-4. `DeleteAccount` → panggil `userContract.DeleteAccount(ctx, userID)`
-5. Hapus **semua** `// TODO:` di `service.go` (baris 210, 238, 284, 317, 351, 383)
+**Prioritas #3 — Step F (RabbitMQ + Email Worker) & OpenAPI Sync**
+1. `platform/messaging/rabbitmq/` (connection, topology idempotent, publisher, consumer + retry 3×/DLQ).
+2. Sambungkan 2 `TODO(step-f)` di `auth/service.go` + `user.registered` welcome email worker di `notification`; hapus blok `dev token` DEBUG.
+3. Sinkronkan `shared/openapi/openapi.yaml` dengan endpoint aktual sebelum integrasi Web penuh.
 
-**Step D — Perbaikan keamanan & performa**
-1. `hashToken` XOR manual → **SHA-256** (`crypto/sha256`)
-2. `revokeAllUserTokens` SCAN seluruh keyspace → index per-user (Redis SET atau key prefix `refresh_token:user:<id>:*`)
-3. Handler: `c.Get("user_id").(string)` → pakai cek `ok` agar **401 bukan panic**
-
-**Step E — Verifikasi & test manual**
-1. `go build ./...` → zero error
-2. `curl` flow penuh: register → login → refresh → logout → forgot-password → verify-email → reset-password → change-password → delete-account
-3. Cek Postgres: `password_hash` benar-benar berubah, `email_verified` = true, `deleted_at` terisi
-4. Cek log JSON punya `trace_id`, `request_id`, `user_id`
-
-**Step F (opsional, setelah A–E) — RabbitMQ + logging upgrade**
-- `platform/messaging/` publisher/consumer + publish `user.registered`/`user.logged_in`
-- Notification worker welcome email
-
-> **Setiap step selesai** → pandu commit → push `dev-zacky` → PR ke `dev`. Format commit:
-> `feat(user): ...`, `fix(auth): ...`, `perf(auth): ...`.
+> **Setiap unit selesai** → review senior → sync `.md` → commit → push `dev-zacky` → PR ke `dev`.
 
 ---
 
@@ -473,17 +446,17 @@ dev-zacky  ← Daily work branch (KAMU DI SINI)
 | 004 | WebSocket generic hub untuk `stories`, `notification`; gRPC streaming untuk `chat` | 2026-09-27 | ✅ Accepted |
 | 005 | RabbitMQ untuk task queue, Kafka untuk event log/analytics | 2026-09-27 | ✅ Accepted |
 | 006 | Shared OpenAPI + Protobuf untuk multi-client SDK generation | 2026-09-27 | ✅ Accepted |
-| 007 | JWT Access (15m) + Refresh (24h, Redis + HttpOnly cookie) | 2026-09-27 | ✅ Accepted |
-| 008 | Structured logging dengan `slog` (stdlib) — JSON, trace_id/span_id, context propagation | 2026-10-15 | ✅ **Implemented** (`4d00ade`) |
+| 007 | JWT Access (15m) + Refresh (24h, Redis + HttpOnly cookie) | 2026-09-27 | ✅ Accepted *(JWT 15m masuk Hotfix #1; cookie menyusul)* |
+| 008 | Structured logging dengan `slog` (stdlib) — JSON, trace_id/span_id, context propagation | 2026-10-15 | ✅ **Implemented** (`4d00ade` + §5b `bef1d55`) |
 | 009 | **Webhook outbound** — dispatch via broker + HMAC-SHA256 signature + retry/backoff | 2026-10-15 | ✅ Accepted (planned) |
 | 010 | **Observability stack**: OpenTelemetry → Grafana Alloy → Loki (logs) + Tempo (traces) + Prometheus (metrics) | 2026-10-15 | ✅ Accepted (planned) |
-| 011 | **Object storage = MinIO** (`ghcr.io/coollabsio/minio:latest`) — kembali dari eksperimen SeaweedFS | 2026-10-15 | ✅ **Implemented** (`77011bb` + follow-up image fix) |
+| 011 | **Object storage = MinIO** (`ghcr.io/coollabsio/minio:latest`) — kembali dari eksperimen SeaweedFS | 2026-10-15 | ✅ **Implemented** (`77011bb` + `022c76f`) |
 | 012 | **slog di-upgrade ke centralized logging** (ship JSON → Loki) setelah aplikasi selesai | 2026-10-15 | ✅ Accepted (planned) |
+| 013 | **Branch workflow 3-layer (`dev-zacky → dev → main`)** untuk fase lokal/solo & dual-boot; `staging` baru dibuat saat ada environment QA/deployment | 2026-11-24 | ✅ Accepted |
 
 > **Catatan ADR-002:** versi lama menyebut "GraphQL gateway *opsional*". Direvisi karena
 > pemilik project ingin GraphQL jelas posisinya: **Web-only**. Lihat koreksi di bagian 5.
-> **Catatan ADR-011:** MinIO sempat diganti SeaweedFS (image Docker Hub-nya 404), lalu diputuskan
-> kembali ke MinIO dengan registry `quay.io`.
+> **Catatan ADR-011:** MinIO sempat diganti SeaweedFS (image Docker Hub 404), lalu kembali ke MinIO via community mirror `ghcr.io/coollabsio/minio:latest` karena `quay.io` menjadi private (`022c76f`).
 
 ---
 
@@ -505,7 +478,7 @@ dev-zacky  ← Daily work branch (KAMU DI SINI)
 
 ## 14. Guardrails (Jangan Dilanggar)
 
-1. **Branch**: Hanya `dev-zacky` untuk coding. PR ke `dev` → `staging` → `main`.
+1. **Branch**: Hanya `dev-zacky` untuk coding. PR ke `dev` → `main` (`staging` menyusul saat fase deploy/QA).
 2. **Contracts**: Modul lain **hanya** import `contracts/`. Tidak boleh import `internal/`.
 3. **SQL**: Query di `repository/queries/*.sql` → `sqlc generate`. Jangan SQL di Go.
 4. **Migration**: File baru di `internal/migrations/`. Jangan edit yang sudah jalan.

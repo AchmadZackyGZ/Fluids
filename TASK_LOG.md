@@ -5,32 +5,31 @@
 > pekerjaan yang diulang dan supaya progres bisa ditunjukkan ke recruiter/reviewer.
 >
 > **Bedanya dengan dokumen lain:**
-> - `TODO.md` → apa yang **akan** dikerjakan (checklist ke depan)
+> - `aturanFluidsAi.md` → peran mentor, aturan keras, workflow dual-boot Windows ↔ Debian
+> - `TODO.md` → apa yang **akan** dikerjakan (checklist & sprint focus ke depan)
 > - `TASK_LOG.md` (**file ini**) → apa yang **sudah** dikerjakan (riwayat ke belakang)
-> - `PLAN.md` → keputusan arsitektur + roadmap
+> - `PLAN.md` → keputusan arsitektur (ADR) + roadmap
 > - `ARCHITECTURE_DOCUMENTATION.md` → referensi teknis aktual
-> - `AGENTS.md` → aturan kerja + jebakan
+> - `AGENTS.md` → aturan kerja, logging §5b, jebakan, protokol PR §12b
 
 ---
 
 ## ⚙️ PROTOKOL WAJIB (untuk AI agent — jangan dilanggar)
 
-Setiap kali pemilik project melaporkan **"task selesai"** dan minta konfirmasi, AI agent **WAJIB** menempuh 5 langkah ini secara berurutan:
+Setiap kali pemilik project melaporkan **"task selesai"** dan mengirim hasil verifikasinya, AI agent **WAJIB** menempuh 5 langkah ini secara berurutan:
 
 | # | Langkah | Detail |
 |---|---|---|
-| 1 | **Review ke sumber aktual** | Baca kodenya langsung. Jangan percaya laporan/checklist. Jalankan `go build ./...`, `gofmt -l`. |
-| 2 | **Perbaiki kalau ada yang salah** | Termasuk formatting (`gofmt -w` **hanya** file yang disentuh), sentinel error yang salah, query yang tidak aman. |
-| 3 | **Commit per concern** | Jangan `git add .`. Satu concern = satu commit. Format Conventional Commits. |
-| 4 | **Push ke `dev-zacky`** | **Jangan pernah** push langsung ke `dev` / `staging` / `main`. |
-| 5 | **Update file ini** | Tambah entri baru di bagian "Detail per task" + baris di tabel Ringkasan. |
+| 1 | **Review ke sumber aktual** | Baca kodenya langsung seperti senior engineer. Jangan percaya laporan/checklist. Minta pemilik jalankan `go build ./...`, `go test ./... -count=1`, `gofmt -l`. |
+| 2 | **Beri koreksi bila ada yang salah** | Termasuk formatting (`gofmt -w` **hanya** file yang disentuh), sentinel error, celah keamanan, logging §5b. Pemilik yang menerapkan perbaikan kode. |
+| 3 | **Sync file `.md` langsung** | Setelah kode dikonfirmasi fixed, AI langsung memperbarui `TASK_LOG.md`, `TODO.md`, dan dokumen terkait (`AGENTS.md`/`PLAN.md`/`ARCHITECTURE_DOCUMENTATION.md`/`aturanFluidsAi.md`) agar tidak stale saat pindah AI atau OS. |
+| 4 | **Pandu commit per concern & push ke `dev-zacky`** | Jangan `git add .`. Satu concern = satu commit (Conventional Commits). **Jangan pernah** push langsung ke `dev` atau `main`. |
+| 5 | **Reminder PR wajib (`AGENTS.md` §12b)** | Begitu pemilik push ke `dev-zacky`, langsung berikan link compare `dev...dev-zacky`, judul PR, body template, dan jumlah commit. |
 
-Kalau ada **keputusan arsitektur** atau **jebakan baru** yang ditemukan → update juga `PLAN.md` / `AGENTS.md` / `MEMORY.md`.
-
-**Setelah PR merged**, jalankan sinkronisasi:
+**Setelah PR merged ke `dev`**, jalankan sinkronisasi (agar Windows & Debian tetap sinkron):
 ```bash
-git checkout dev && git pull
-git checkout dev-zacky && git merge dev
+git checkout dev && git pull --ff-only origin dev
+git checkout dev-zacky && git merge dev && git push origin dev-zacky
 ```
 > ⚠️ Setelah `git merge dev`, VS Code **akan** menampilkan "Push N commits" — itu **normal dan aman**.
 > Yang di-push adalah merge commit dari PR yang sudah ada di `dev`. Lihat catatan di T-017.
@@ -72,7 +71,8 @@ git checkout dev-zacky && git merge dev
 | T-018 | 2026-10-17 | **Step C** — sambungkan 5 stub auth ke `userContract` | ✅ | `09c7e26` | — |
 | T-019 | 2026-10-17 | 🔴 **Fix**: `PasswordHash` hilang di mapping `GetUserByID` | ✅ | `b050692` | — |
 | T-020 | 2026-10-17 | **Step D** — aturan logging + hardening auth (SHA-256, index per-user, anti-panic) | ✅ | `bef1d55`, `b75a2fb`, `6cecb01` | #27 |
-| T-021 | 2026-10-18 | **Step E** — unit test otomatis (35 test: auth service, security, logger) | ✅ | *(lihat git log)* | — |
+| T-021 | 2026-10-18 | **Step E** — unit test otomatis (35 test: auth service, security, logger) | ✅ | `52b85db`, `e9943a2`, `90f238b` | #28 |
+| T-022 | 2026-11-24 | Audit kode & sinkronisasi penuh `.md` + penyatuan `aturanFluidsAi.md` + sahkan alur branch 3-layer (`dev-zacky → dev → main`) | ✅ | *(PR docs ini)* | — |
 
 ---
 
@@ -364,6 +364,17 @@ git checkout dev-zacky && git merge dev
 - **Pelajaran kedua:** `miniredis` + fake contract membuat test jalan dalam hitungan detik tanpa Docker.
   Ini yang membuat test **benar-benar dijalankan**, bukan ditinggalkan karena "terlalu ribet".
 
+### T-022 — Audit kode & sinkronisasi seluruh dokumen `.md` + penyatuan `aturanFluidsAi.md`
+- **Tanggal:** 2026-11-24 · **Status:** ✅
+- **Tujuan:** menyelaraskan seluruh dokumen `.md` dengan realita kode aktual pasca PR #28, menyatukan aturan AI dual-boot Windows ↔ Debian supaya tidak *drift*, serta mengesahkan alur branch 3-layer.
+- **Yang dikerjakan:**
+  - Menyatukan `aturanFluidsAi_linux.md` + `aturanFluidsAi_windows.md` menjadi satu file `aturanFluidsAi.md` (lengkap dengan tabel perbedaan environment Windows 10 Home vs Debian 13).
+  - Mengesahkan alur branch 3-layer (`dev-zacky → dev → main`; `staging` menyusul di fase deploy/QA — ADR-013 di `PLAN.md`).
+  - Memperbarui klaim stale di `AGENTS.md`, `TODO.md`, `PLAN.md`, `ARCHITECTURE_DOCUMENTATION.md`, `GEMINI.md`, `IDEA.md`, dan `TASK_LOG.md` (Auth Step A–E selesai, 35 unit test PASS, 36 route API, 11 file migrasi, MinIO mirror `ghcr.io/coollabsio/minio`).
+  - Mencatat hasil audit kode aktual sebagai prioritas #1 berikutnya (**Hotfix Keamanan & Kontrak**: JWT 15m, IDOR `content.UpdatePostCaption`, 8× unsafe `user_id`, envelope `Register`, healthcheck MinIO).
+  - Memperjelas izin standing bahwa AI boleh & wajib langsung meng-update `.md` setelah task direview & dikonfirmasi fixed, sementara seluruh kode & perintah terminal tetap dijalankan pemilik project.
+- **Verifikasi:** seluruh fakta di `.md` diverifikasi langsung terhadap source code aktual (`main.go`, 6 modul, `platform/**`, `podman-compose.dev.yml`, `App.tsx`, `AuthFormCard.tsx`, `openapi.yaml`).
+
 ---
 
 ## Template entri baru (copy-paste)
@@ -381,4 +392,4 @@ git checkout dev-zacky && git merge dev
 
 ---
 
-*Terakhir diperbarui: 2026-10-17 — tambahkan entri setiap task selesai & terverifikasi.*
+*Terakhir diperbarui: 2026-11-24 — tambahkan entri setiap task selesai & terverifikasi.*
