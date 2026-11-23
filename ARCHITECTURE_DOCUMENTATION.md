@@ -5,10 +5,11 @@
 > Pembagian peran dokumen (jangan dicampur):
 > | File | Peran |
 > |---|---|
+> | `aturanFluidsAi.md` | Peran mentor, aturan keras, workflow dual-boot Windows ↔ Debian, prioritas terkini |
 > | `PLAN.md` | Keputusan arsitektur + roadmap (ADR style) — **source of truth arsitektur** |
 > | `ARCHITECTURE_DOCUMENTATION.md` | **File ini** — penjelasan teknis detail: alur data, kontrak, skema |
-> | `AGENTS.md` | Aturan kerja, konvensi ngoding, jebakan yang sudah terkonfirmasi |
-> | `TODO.md` | Status task per minggu (checklist, **ke depan**) |
+> | `AGENTS.md` | Aturan kerja, konvensi ngoding, logging §5b, jebakan, protokol PR §12b |
+> | `TODO.md` | Status task & sprint focus (checklist, **ke depan**) |
 > | `TASK_LOG.md` | Riwayat task yang **sudah selesai** + protokol review/commit |
 > | `.agents/rules/design-tokens.md` | **Source of truth styling UI** — jangan diubah tanpa alasan kuat |
 >
@@ -16,7 +17,7 @@
 > (microservice terpisah di port 8081–8085, Traefik, GIN, Confluent Kafka + Zookeeper,
 > Postgres 5432, folder `backend/`). Semua itu **tidak pernah** menjadi kenyataan.
 > Versi ini menggantikannya dengan deskripsi sistem aktual.
-> Terakhir diperbarui: 15 Oktober 2026
+> Terakhir diperbarui: 24 November 2026
 
 ---
 
@@ -91,15 +92,15 @@ Binding lewat Fx di `user/module.go`:
 func ProvideUserContract(s service.UserService) contracts.UserContract { return s }
 ```
 
-**Status `contracts/` per 15 Okt 2026:**
+**Status `contracts/` per 24 Nov 2026:**
 
 | Modul | contracts/ | Keterangan |
 |---|---|---|
-| `user` | ✅ | Dipakai `auth` |
+| `user` | ✅ | Dipakai `auth` (6 method: Create, GetByEmail, GetByID, UpdatePassword, UpdateEmailVerified, DeleteAccount) |
 | `content` | ✅ | Belum di-consume |
 | `social` | ✅ | Belum di-consume |
 | `notification` | ✅ | Belum di-consume |
-| `auth` | ✅ | Baru dibuat; belum di-consume |
+| `auth` | ✅ | Ada, tapi `auth/service.go` masih punya duplikasi sentinel `service.Err*` & belum di-provide sebagai `AuthContract` |
 | `reco` | ❌ | Belum ada — belum di-consume modul lain |
 
 ### 2.2 Struktur satu modul
@@ -224,13 +225,13 @@ Urutan dependensi: user → content → social → notification → reco.
 
 | Modul | Tabel | Catatan |
 |---|---|---|
-| `user` | `users` | ⚠️ **belum punya** kolom `email_verified` & `deleted_at` |
-| `content` | `posts`, `post_media`, `post_code_snippets` | |
-| `social` | `follows`, `bookmarks` | |
+| `user` | `users` | ✅ Sudah punya `email_verified` & `deleted_at` (migrasi `0003`, PR #26) |
+| `content` | `posts`, `post_media`, `post_code_snippets` | Belum ada tabel `likes` / `comments` (baru kolom counter) |
+| `social` | `follows`, `bookmarks` | ⚠️ `social.sql` masih `UPDATE`/`SELECT` tabel `users` langsung |
 | `notification` | `notifications` | |
 | `reco` | `user_embeddings`, `item_embeddings` | vektor untuk Two-Tower |
 
-Total: **9 tabel bisnis**, 8 migrasi. Semua memakai `UUID` sebagai primary key
+Total: **9 tabel bisnis** + 5 tabel tracking `schema_migrations_*` (**14 tabel**), **11 file migrasi** di 5 modul (`auth` belum punya `repository/` & `migrations/`). Semua memakai `UUID` sebagai primary key
 (bukan `BIGSERIAL` seperti di dokumen versi lama).
 
 **Query:** ditulis manual di `repository/queries/*.sql`, lalu di-generate `sqlc`.
@@ -239,11 +240,12 @@ Konfigurasi per-modul ada di `server/sqlc.yaml`. **Jangan tulis SQL di dalam Go.
 ### 5.2 Redis 7
 
 Dipakai untuk (aktual):
-- Refresh token (key `refresh_token:<hash>`, TTL 24 jam)
-- Reset password token (TTL 1 jam)
-- Email verification token (TTL 24 jam)
-- Rate limiting (`INCR` + `EXPIRE`, mis. forgot-password max 3/jam)
-- Blacklist access token (TTL 15 menit)
+- Refresh token (key `refresh_token:<sha256-hash>`, TTL 24 jam) + index per-user SET `user_refresh_tokens:<userID>` (TTL 24 jam, O(k) revoke)
+- Reset password token (`password_reset:<sha256-hash>`, TTL 1 jam)
+- Email verification token (`email_verification:<sha256-hash>`, TTL 24 jam)
+- Rate limiting (`INCR` + `EXPIRE`, mis. forgot-password & resend-verification max 3/jam)
+- Blacklist key (`access_blacklist:<hash>`, TTL 15 menit) — ⚠️ belum ditegakkan di `JWTMiddleWare`
+- Cache GitHub heatmap (`social`, TTL 6 jam) & unread notification count (`notification`, TTL 2 menit)
 
 Rencana tambahan: cache feed, counter realtime, Pub/Sub untuk WebSocket horizontal scaling.
 
@@ -268,11 +270,10 @@ Lokasi: `server/internal/platform/logger/`
 | `middleware.go` | `RequestIDMiddleware`, `LoggingMiddleware`, `UserIDMiddleware` |
 
 Fitur penting:
-- **`SanitizeArgs()`** — deny-list 15 field sensitif (`password`, `token`, `refresh_token`, dll)
-  otomatis menjadi `[REDACTED]` sebelum masuk log. Mencegah kebocoran kredensial ke log.
+- **`SanitizeArgs()`** — deny-list eksak + pencocokan **substring** (`isSensitiveKey`: `password`, `token`, `secret`, `api_key`, `apikey`, `credential`, `private_key`) otomatis menjadi `[REDACTED]` sebelum masuk log (termasuk `current_password`, `new_password`, `reset_token`).
 - **Context propagation** — `WithContext(ctx)` menarik `trace_id`, `span_id`, `request_id`,
-  `user_id` dari `context.Context`. Semua log lewat `InfoCtx`/`ErrorCtx` otomatis membawa
-  korelasi ini.
+  `user_id` dari `context.Context`. Semua log lewat `DebugCtx`/`InfoCtx`/`WarnCtx`/`ErrorCtx` otomatis membawa korelasi ini.
+- **Aturan ketat (`AGENTS.md` §5b):** error di-log sekali di handler, service tidak boleh log error yang di-`return`, 4xx = `WARN` bukan `ERROR`. ⚠️ *Catatan aktual (24 Nov 2026):* `UserIDMiddleware` belum di-mount di `main.go`, `LoggingMiddleware` menangkap `ctx` sebelum `next(c)`, dan 5 handler non-`auth` belum direfactor ke pola §5b.
 
 **Aturan:** dilarang `fmt.Println` / `log.Printf` di modul. Semua lewat wrapper.
 
@@ -316,10 +317,12 @@ Env: `deploy/podman/.env` (gitignored, copy dari `.env.example`)
 
 Aplikasi: Go API `:8080`, Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
 
-**Catatan penting (Windows/WSL):**
-- Podman machine **wajib rootful + cgroupfs**. Rootless membuat `cgroupControllers: []`
+**Catatan penting (Dual-Boot Windows & Debian 13):**
+- **Windows/WSL:** Podman machine **wajib rootful + cgroupfs**. Rootless membuat `cgroupControllers: []`
   kosong → semua container gagal dengan `crun: controller pids is not available`.
-- Kafka di sini memakai mode **KRaft** (tanpa Zookeeper).
+- **Debian 13 (Linux):** Podman berjalan native **rootless**. `podman-compose` 1.3.0 punya bug path relatif → jalankan dari `deploy/podman/` atau pakai `-f "$PWD/deploy/podman/podman-compose.dev.yml"`.
+- **MinIO healthcheck:** `podman-compose.dev.yml` masih memakai `curl` (tidak ada di image → tampil `unhealthy` false alarm); akan diganti `["CMD","mc","ready","local"]` di Hotfix #1.
+- Kafka memakai mode **KRaft** (tanpa Zookeeper).
 
 ---
 
@@ -327,26 +330,28 @@ Aplikasi: Go API `:8080`, Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
 
 ```
 Client (Web :3000)
-   │  POST /api/auth/login   ← lewat proxy Vite
+   │  POST /api/v1/auth/login   ← lewat proxy Vite
    ▼
 Echo :8080
    │  RequestIDMiddleware   → generate request_id + trace_id, inject ke context
-   │  LoggingMiddleware     → catat mulai
+   │  LoggingMiddleware     → catat mulai + latency di akhir
    ▼
 auth/delivery/http — AuthHandler.Login
-   │  c.Bind(&req) → validator
-   │  logger.InfoCtx(ctx, "login attempt", sanitized...)
+   │  c.Bind(&req)
+   │  logger.DebugCtx(ctx, "login attempt", "email", req.Email)
    ▼
 auth/internal/service — authService.Login
+   │  validator.Validate.Struct(req)
    │  userContract.GetUserByEmail()      ← LINTAS MODUL lewat contracts/ ✅
    │  security.CheckPasswordHash()
    ▼
-user/internal/service → user/internal/repository → sqlc → PostgreSQL
+user/internal/service → user/internal/repository → sqlc → PostgreSQL (WHERE deleted_at IS NULL)
    ▼
 kembali ke authService
-   │  issueTokens() → JWT access (15m) + refresh (24h) → Redis
+   │  issueTokens() → JWT HS256 (target 15m; masih 24h di jwt.go — masuk Hotfix)
+   │                + refresh token (SHA-256, 24h) → Redis + SET user_refresh_tokens:<userID>
    ▼
-handler → c.JSON(200, {...})
+handler → logger.InfoCtx("login success") → c.JSON(200, {"status":"success","data":res})
    │  LoggingMiddleware catat selesai + latency
    ▼
 Client
@@ -357,26 +362,26 @@ Itu bukti isolasi modul berjalan.
 
 ---
 
-## 9. Utang Teknis yang Terkonfirmasi (per 15 Okt 2026)
+## 9. Utang Teknis yang Terkonfirmasi (per 24 Nov 2026)
 
-Diurutkan dari paling kritis.
+> ✅ Auth Step A–E (`email_verified`/`deleted_at`, `UserContract` 6 method, 5 stub auth, SHA-256 `HashToken`, Redis SET per-user index, 35 unit test) **sudah selesai** (PR #26–#28). Daftar di bawah adalah lubang aktual yang tersisa.
 
-| # | Masalah | Dampak |
-|---|---|---|
-| 1 | 5 method auth masih stub: `VerifyEmail` (email tidak di-update), `ResetPassword` & `ChangePassword` (password **tidak pernah berubah**), `DeleteAccount` (tidak soft-delete) | Fitur keamanan akun tidak berfungsi |
-| 2 | `userContract` hanya 3 method — belum ada `UpdatePassword`, `UpdateEmailVerified`, `DeleteAccount` | Akar masalah #1 |
-| 3 | Tabel `users` belum punya `email_verified` & `deleted_at` | Akar masalah #1 |
-| 4 | `hashToken()` pakai XOR manual, bukan SHA-256 | Lemah sebagai key derivation |
-| 5 | `revokeAllUserTokens()` pakai `SCAN refresh_token:*` seluruh keyspace | O(N) tiap ganti/hapus password |
-| 6 | `auth/internal/repository/` tidak ada — persistence 100% inline di service | Melanggar layer wajib; sulit dites |
-| 7 | RabbitMQ/Kafka belum dipakai kode Go | Container jalan tanpa guna |
-| 8 | `platform/storage/` belum ada | Avatar/media belum bisa diunggah |
-| 9 | `shared/openapi/openapi.yaml` isinya belum lengkap | Tidak bisa generate SDK klien |
-| 10 | `shared/proto/` belum ada | gRPC belum bisa mulai |
-| 11 | Assertion `c.Get("user_id").(string)` tanpa `ok` di beberapa handler | Berpotensi panic bila middleware tidak men-set |
+Diurutkan dari paling kritis:
 
-> ⚠️ **Ingat:** `TODO.md` dan `PLAN.md` bersifat aspirational. Banyak item `[x]` di sana
-> ternyata stub. **Selalu verifikasi ke kode**, bukan ke checklist.
+| # | Masalah | Lokasi | Dampak |
+|---|---|---|---|
+| 1 | **IDOR pada `PATCH /api/v1/content/posts/:id`** — tidak cek `post.AuthorID != userID` | `content/internal/delivery/http/handler.go:95-123` | User mana pun bisa mengubah caption post orang lain (**Hotfix #1**) |
+| 2 | **JWT expiry 24 jam (bukan 15 menit)** + blacklist `access_blacklist:` tidak ditegakkan di `JWTMiddleWare` | `platform/security/jwt.go:29`, `security/middleware.go` | Token tetap aktif 24 jam meski logout/ganti password/hapus akun (**Hotfix #1** untuk expiry 15m) |
+| 3 | **8× type assertion `c.Get("user_id").(string)` tanpa `, ok`** di `content` + `reco` bocor `err.Error()` di HTTP 500 | `content/handler.go`, `reco/handler.go:38` | Berpotensi panic 500 & membocorkan error internal (**Hotfix #1** untuk `content`) |
+| 4 | **Envelope `Register` flat** (`{token, user}`), tidak sama dengan `Login`/`Refresh` (`{"status":"success","data":...}`) | `auth/handler.go:131` vs `AuthFormCard.tsx:119` | Web frontend gagal menyimpan `fluids_token` saat register (**Hotfix #1**) |
+| 5 | Endpoint profil user belum lengkap (`App.tsx` panggil `PUT /api/v1/users/profile` → 404) & `platform/storage/` belum ada | `user/module.go`, `web/.../App.tsx:115` | Edit profil & upload avatar MinIO belum jalan (**Prioritas #2**) |
+| 6 | RabbitMQ/Kafka belum dipakai Go (`platform/messaging/` belum ada) + 2 `TODO(step-f)` & log `dev token` DEBUG | `auth/service.go:236-239, 317-320` | Email reset/verifikasi & welcome email belum terkirim (**Prioritas #3**) |
+| 7 | `auth/internal/repository/` & `migrations/` belum ada; duplikasi `service.Err*` vs `auth/contracts/errors.go`; HttpOnly cookie belum diset di `Login`/`Register` | `auth/internal/service/service.go`, `auth/handler.go` | Utang arsitektur modul `auth` |
+| 8 | Coupling SQL lintas modul (`social.sql:73` `UPDATE users`, `sqlc.yaml` share schema); `content` belum punya tabel `likes`/`comments`; N+1 di `ListFeed`/`GetFollowers` | `social.sql`, `content/service.go`, `social/service.go` | Menghambat pemecahan microservice & performa saat skala besar |
+| 9 | `UserIDMiddleware` tidak terpasang, `LoggingMiddleware` ambil `ctx` sebelum `next(c)`, dan 5 handler non-`auth` belum ikut `AGENTS.md` §5b | `logger/middleware.go`, `{user,content,social,notification,reco}/handler.go` | Noise log `INFO` & `ERROR` palsu pada 4xx |
+| 10 | `shared/openapi/openapi.yaml` baru 2 endpoint usang; `shared/proto/` belum ada; healthcheck MinIO masih `curl` | `shared/openapi/openapi.yaml`, `podman-compose.dev.yml:84` | Belum bisa generate SDK klien; false alarm `unhealthy` MinIO (**Hotfix #1**) |
+
+> ⚠️ **Ingat:** selalu verifikasi ke kode sumber aktual sebelum menandai item selesai.
 
 ---
 

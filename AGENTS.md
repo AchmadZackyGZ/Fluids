@@ -4,15 +4,16 @@
 > alur branch, stack, struktur folder, cara menjalankan, konvensi ngoding,
 > dan **status pekerjaan terkini** supaya pekerjaan yang sudah selesai tidak diulang.
 
-Terakhir diperbarui: 15 Oktober 2026
+Terakhir diperbarui: 24 November 2026
 
 > 📌 **Dokumen lain & perannya** (supaya tidak tumpang tindih):
+> - `aturanFluidsAi.md` → peran mentor, aturan keras, workflow dual-boot Windows ↔ Debian, prioritas kerja terkini.
 > - `PLAN.md` → keputusan arsitektur + roadmap (ADR style). Ini yang jadi acuan arah.
 > - `ARCHITECTURE_DOCUMENTATION.md` → referensi teknis detail arsitektur **aktual**.
-> - `TODO.md` → status task per-minggu (**ke depan**).
+> - `TODO.md` → status task & sprint focus (**ke depan**).
 > - `TASK_LOG.md` → riwayat task yang **sudah selesai** + protokol review/commit. Baca ini untuk tahu apa yang sudah dikerjakan.
 > - `GEMINI.md` → pointer ke design token.
-> - File ini (`AGENTS.md`) → **aturan kerja + konvensi + jebakan + status terkini**.
+> - File ini (`AGENTS.md`) → **aturan kerja + konvensi + logging §5b + jebakan + protokol PR §12b**.
 
 ---
 
@@ -20,12 +21,12 @@ Terakhir diperbarui: 15 Oktober 2026
 
 Project ini adalah **project portofolio / karier** pemiliknya. Karena itu:
 
-1. **Pemilik project mengetik dan menjalankan sendiri seluruh kodenya.** Tugas AI agent adalah **memandu seperti senior developer**: beri kode + langkah + penjelasan singkat, bukan mengedit file secara agentic.
-2. **Dilarang melakukan edit file secara otonom** pada kode project (`server/`, `web/`, `ml/`, `deploy/`) kecuali pemilik project **secara eksplisit** meminta.
-3. Pengecualian: file dokumentasi (`.md`) **boleh** dikoreksi langsung kalau diminta.
-4. Setiap task selesai, **pandu pemilik untuk commit → push ke `dev-zacky` → PR `dev-zacky` → `dev`**.
+1. **Pemilik project mengetik dan menjalankan sendiri seluruh kode & perintah terminal.** Tugas AI agent adalah **memandu seperti senior developer**: beri kode + langkah + penjelasan singkat + review hasil kerjanya, bukan mengedit kode atau menjalankan terminal secara agentic.
+2. **Dilarang melakukan edit file secara otonom** pada kode project (`server/`, `web/`, `ml/`, `deploy/`, `Makefile`, `shared/`) kecuali pemilik project **secara eksplisit** menulis *"kerjakan dengan mode agentic"*.
+3. **Pengecualian resmi — dokumentasi (`.md`):** AI **BOLEH dan WAJIB mengedit langsung** file dokumentasi `.md` setelah task/hotfix selesai direview & dikonfirmasi (atau saat sinkronisasi docs), agar konteks tetap akurat saat pemilik pindah OS atau berganti AI agent.
+4. Setiap task selesai, **review hasil ketikan pemilik → update file `.md` → pandu commit → push ke `dev-zacky` → PR `dev-zacky` → `dev`**.
 
-> Ringkasnya: AI = mentor yang memberi kode & arahan. Pemilik = yang eksekusi. Ini disengaja supaya dia benar-benar paham.
+> Ringkasnya: AI = mentor + reviewer + penjaga akurasi `.md`. Pemilik = eksekutor semua kode & perintah terminal. Ini disengaja supaya dia benar-benar paham.
 
 ---
 
@@ -33,37 +34,38 @@ Project ini adalah **project portofolio / karier** pemiliknya. Karena itu:
 
 Platform sosial media **untuk developer** (konsep: Instagram-like tapi code-first). Monorepo polyglot:
 
-| Folder | Isi | Status (15 Okt 2026) |
+| Folder | Isi | Status (24 Nov 2026) |
 |---|---|---|
-| `server/` | Backend Go — modular monolith (6 modul) | ✅ jalan lokal, auth masih ada stub |
-| `web/` | Frontend React (SPA) | ✅ ~80% selesai (desain sudah final) |
+| `server/` | Backend Go — modular monolith (6 modul, 36 route API) | ✅ jalan lokal, Auth Step A–E selesai (35 test PASS), lanjut Hotfix Keamanan & Kontrak |
+| `web/` | Frontend React (SPA) | ✅ ~80% selesai (desain sudah final; integrasi API baru sebagian auth) |
 | `ml/` | Two-Tower Neural Network recsys (Python) | ⏸️ belum disetup (baru `pyproject.toml` + `uv.lock`) |
 | `mobile/` | Flutter | ⏸️ belum ada di repo |
-| `shared/openapi` | Kontrak API | 🟡 masih 1 file `openapi.yaml` |
+| `shared/openapi` | Kontrak API | 🟡 masih 1 file `openapi.yaml` (baru 2 path usang) |
 | `deploy/` | Podman compose + init SQL | ✅ jalan lokal |
 
 - Repo: `https://github.com/AchmadZackyGZ/Fluids`
-- Path lokal: `D:\Project-Zacky\Fluids`
+- Path lokal: `D:\Project-Zacky\Fluids` (Windows) · dual-boot Debian 13 (Linux)
 - Go module path: `github.com/AchmadZackyGZ/fluids/server`
 
 ---
 
 ## 2. ALUR BRANCH — WAJIB DIIKUTI, JANGAN DILANGGAR
 
+Disahkan **24 Nov 2026** (3 layer untuk fase lokal/solo; lihat ADR-013 di `PLAN.md`):
+
 ```
-main       ← production (rilis stabil)
+main       ← rilis stabil / showcase portfolio (PR only, per milestone besar)
   ↑ PR
-staging    ← pra-production (QA / verifikasi)
+dev        ← integrasi yang selalu hijau: build + test pass (PR only, per concern)
   ↑ PR
-dev        ← integrasi seluruh kerjaan tim (kamu + team)
-  ↑ PR
-dev-zacky  ← branch kerja harian (ngoding + testing di sini)
+dev-zacky  ← branch kerja harian + sinkronisasi dual-boot Windows ↔ Debian
 ```
 
 **Aturan:**
 - Semua ngoding & testing dikerjakan di **`dev-zacky`**.
-- Naik ke atas **hanya lewat Pull Request**, tidak pernah commit langsung.
-- Jangan pernah `git push` langsung ke `dev`, `staging`, atau `main`.
+- Naik ke atas **hanya lewat Pull Request**, tidak pernah commit/push langsung ke `dev` atau `main`.
+- **Branch `staging` belum dipakai** saat ini (belum ada server QA/staging terpisah); akan ditambahkan nanti saat masuk fase CI/CD & deployment (Week 8/9).
+- **Dual-boot sync:** sebelum pindah OS → commit & `git push origin dev-zacky`; di OS tujuan → `git fetch origin` lalu `git pull --ff-only origin dev-zacky`.
 
 ---
 
@@ -74,10 +76,11 @@ dev-zacky  ← branch kerja harian (ngoding + testing di sini)
 - **Echo v4.15.4** (HTTP framework)
 - **Uber Fx v1.24.0** (dependency injection)
 - **pgx v5.10.0** + `pgxpool` (PostgreSQL driver)
-- **go-playground/validator v10.30.3** (validasi request) — masih `// indirect` di go.mod
+- **go-playground/validator v10.30.3** (validasi request — direct `require`)
 - **golang-jwt/jwt v5.3.1** + `golang.org/x/crypto` (auth & hashing password)
-- **redis/go-redis v9.22.0** (cache) — masih `// indirect` di go.mod
+- **redis/go-redis v9.22.0** (cache & token store — direct `require`)
 - **pgvector-go v0.4.1** (vector embedding untuk reco)
+- **alicebob/miniredis/v2 v2.40.0** + **stretchr/testify v1.12.1** (unit testing tanpa container)
 - **sqlc** (generate kode dari query SQL) + **air** (hot reload)
 
 ### Frontend (`web/`)
@@ -86,9 +89,9 @@ dev-zacky  ← branch kerja harian (ngoding + testing di sini)
 - framer-motion, lucide-react, clsx, tailwind-merge
 - **`packageManager: pnpm@9.0.0`** di-pin di `web/package.json`
 
-### Infra
-- Podman **6.1.1** + `podman-compose` **1.6.0**
-- Podman machine: `podman-machine-default`, provider **WSL** (Fedora-based)
+### Infra (Dual-Boot)
+- **Windows 10 Home:** Podman **6.1.1** + `podman-compose` **1.6.0**, machine `podman-machine-default` (WSL, **wajib rootful + cgroupfs**)
+- **Debian 13 (Linux):** Podman native (**rootless**) + `podman-compose` **1.3.0** (catatan bug path relatif di §6)
 
 ---
 
@@ -97,14 +100,15 @@ dev-zacky  ← branch kerja harian (ngoding + testing di sini)
 ```
 Fluids/
 ├── .agents/rules/design-tokens.md   ← SOURCE OF TRUTH styling UI. Baca sebelum bikin komponen.
-├── AGENTS.md                        ← file ini (aturan kerja + konteks)
+├── aturanFluidsAi.md                ← aturan mentor, workflow dual-boot, prioritas kerja terkini
+├── AGENTS.md                        ← file ini (aturan kerja + konvensi + logging + PR)
 ├── ARCHITECTURE_DOCUMENTATION.md    ← referensi teknis arsitektur AKTUAL
 ├── PLAN.md                          ← keputusan arsitektur + roadmap (ADR)
-├── TODO.md                          ← status task per-minggu
+├── TODO.md                          ← status task & sprint focus
 ├── TASK_LOG.md                      ← riwayat task SELESAI + protokol review/commit
 ├── IDEA.md                          ← ringkasan ide project (1 paragraf)
 ├── GEMINI.md                        ← pointer ke design-tokens
-├── Makefile                         ← entry point perintah dev
+├── Makefile                         ← entry point perintah dev (kompatibel cmd.exe Windows)
 ├── deploy/
 │   ├── podman/podman-compose.dev.yml  ← 5 service container
 │   ├── podman/.env                    ← GITIGNORED, dibuat manual dari .env.example
@@ -112,7 +116,7 @@ Fluids/
 ├── server/                          ← Go backend
 ├── web/                             ← React frontend (pnpm workspace + turbo)
 ├── ml/                              ← Python (pyproject.toml + uv.lock) — belum disetup
-└── shared/openapi/                  ← kontrak API (sekarang: openapi.yaml)
+└── shared/openapi/                  ← kontrak API (sekarang: openapi.yaml, baru 2 path)
                                      ← 🔜 shared/proto/ (gRPC) & shared/events/ (schema) BELUM ADA
 ```
 
@@ -362,7 +366,7 @@ Select-String -Path <log-file> -Pattern '"(new_password|current_password|reset_t
 
 ---
 
-## 6. Infra lokal (Podman, Windows)
+## 6. Infra lokal (Podman, Dual-Boot Windows & Debian 13)
 
 Compose file: `deploy/podman/podman-compose.dev.yml`
 Env file: `deploy/podman/.env` (**gitignored**, copy dari `.env.example`)
@@ -378,9 +382,10 @@ Env file: `deploy/podman/.env` (**gitignored**, copy dari `.env.example`)
 - Database: `fluids_db`, user `fluids_admin`
 - Extension terpasang otomatis: `uuid-ossp`, `vector`, `pgcrypto`, `pg_trgm`
 - ⚠️ Port **5432 sudah dipakai** container project lain (`invora-postgres`). Fluids pakai 5436 — jangan diubah.
-- ⚠️ **Object storage = MinIO** (keputusan 15 Okt 2026, kembali dari eksperimen SeaweedFS). Container name `fluids-minio`, volume `minio_data`, console `--console-address ":9001"`.
-- ⚠️ **Object storage = MinIO**, tapi MinIO **menghapus semua image publiknya** (`docker.io/minio/minio` → 404, dan `quay.io/minio/minio` sekarang **private** → `unauthorized`). **Pakai community mirror: `ghcr.io/coollabsio/minio:latest`** (build otomatis dari source MinIO resmi, multi-arch, tanpa auth). Alternatif: `docker.io/coollabsio/minio:latest`. Konteks: https://github.com/minio/minio/issues/21647
-- ⚠️ Podman machine **wajib rootful + cgroupfs** di Windows/WSL (06 Okt 2026): rootless bikin `cgroupControllers: []` kosong → semua container gagal `crun: controller pids is not available`. Fix: `podman machine set --rootful` + file `/etc/containers/containers.conf.d/99-cgroupfs.conf` berisi `[engine]` + `cgroup_manager = "cgroupfs"` di dalam VM (via `Get-Content ... | podman machine ssh sudo tee ...`), lalu restart machine. File ini hilang kalau machine di-`rm`, wajib dibuat ulang.
+- ⚠️ **Object storage = MinIO** via community mirror **`ghcr.io/coollabsio/minio:latest`** karena MinIO menghapus image publik di Docker Hub (404) & `quay.io` (private). Konteks: https://github.com/minio/minio/issues/21647
+- ⚠️ **Healthcheck MinIO (`unhealthy` false alarm):** `podman-compose.dev.yml` masih memakai `curl` yang tidak ada di image MinIO. Server tetap sehat; masuk antrean Hotfix (`test: ["CMD","mc","ready","local"]`).
+- ⚠️ **Windows/WSL:** Podman machine **wajib rootful + cgroupfs** (06 Okt 2026): rootless bikin `cgroupControllers: []` kosong → gagal `crun: controller pids is not available`. Fix: `podman machine set --rootful` + `/etc/containers/containers.conf.d/99-cgroupfs.conf` (`cgroup_manager = "cgroupfs"`), lalu restart machine.
+- ⚠️ **Debian 13 (Linux):** Podman berjalan native **rootless**. `podman-compose` versi Debian 1.3.0 punya bug path relatif → jalankan dari `deploy/podman/` atau pakai absolute path `-f "$PWD/deploy/podman/podman-compose.dev.yml"`.
 
 Aplikasi: Go API `:8080` (health `/health`), Web Vite `:3000` (proxy `/api` → `127.0.0.1:8080`).
 
@@ -440,7 +445,7 @@ Dikerjakan 19–20 September 2026 (setup environment), lalu **15 Oktober 2026** 
 - [x] Redis `PING` → `PONG`
 
 ### Database (SELESAI, terverifikasi)
-- [x] Migrasi 5 modul jalan semua (**9 file migrasi**: user 3, content 1, social 1, notification 1, reco 3)
+- [x] Migrasi 5 modul jalan semua (**11 file migrasi**: user 5, content 1, social 1, notification 1, reco 3 — termasuk migrasi `0003` user)
 - [x] 9 tabel bisnis: `users`, `posts`, `post_media`, `post_code_snippets`, `bookmarks`, `follows`, `notifications`, `user_embeddings`, `item_embeddings`
 - [x] 5 tabel tracking: `schema_migrations_{user,content,social,notification,reco}`
 
@@ -449,136 +454,97 @@ Dikerjakan 19–20 September 2026 (setup environment), lalu **15 Oktober 2026** 
 - [x] Web `:3000` — Vite ready
 - [x] **`POST /api/v1/auth/register` dan `/login` lewat proxy `:3000/api` sukses**, JWT keluar, row user tersimpan di Postgres
 
-### Pekerjaan 15 Okt 2026 — SUDAH DI-COMMIT & SUDAH DI-MERGE KE `dev`
-Semua di bawah ini **sudah selesai, sudah di-commit, dan PR-nya sudah di-merge**. Jangan kerjakan ulang.
+### Pekerjaan 15–18 Okt 2026 — SUDAH DI-COMMIT & SUDAH DI-MERGE KE `dev` (PR #24–#28)
+Semua di bawah ini **sudah selesai, terverifikasi, dan sudah di-merge ke `dev`** (detail lengkap di `TASK_LOG.md` T-006 s/d T-021). Jangan kerjakan ulang.
 
-| Commit | Isi |
+| PR | Isi Utama |
 |---|---|
-| `4d00ade` | `feat(platform)`: structured logging dengan `slog` + context propagation |
-| `02038bf` | `fix(auth)`: mount JWT middleware di protected routes (`/logout`, `/change-password`, `/account`) |
-| `77011bb` | `chore(infra)`: switch object storage kembali ke MinIO |
-| *(working tree)* | `fix(infra)`: ganti image MinIO ke `ghcr.io/coollabsio/minio:latest` (quay.io jadi private) |
-| `8506e25` | `docs`: sync AGENTS.md & TODO.md + enforce LF untuk shell & SQL |
-| `bffec42` | `refactor(social)`: hapus per-module redis provider |
-
-→ PR #24 **merged ke `dev`** (squash commit `59285ad`). Working tree bersih pada saat merge.
-
-Rincian perbaikan:
-- [x] **Structured logging** (`internal/platform/logger/`): `logger.go` (Init + JSON handler + `ReplaceAttr` rename `level`→`severity`, `time`→`timestamp`, tambah `source`) + `middleware.go` (`RequestIDMiddleware`, `LoggingMiddleware`, `UserIDMiddleware`) + `SanitizeArgs()` deny-list untuk 15 field sensitif. Dipasang di `main.go`.
-- [x] **Bug JWT middleware FIXED.** Dulu `JWT` hanya dipasang di sebagian route → `c.Get("user_id").(string)` **panic**. Sekarang `auth/module.go` memisah route jadi dua group: `public` (register, login, refresh, forgot-password, verify-email, resend-verification, reset-password) dan `protected` (+ `security.JWTMiddleWare`: logout, change-password, delete-account).
-- [x] **Object storage kembali ke MinIO** di compose + volume `minio_data`.
-- [x] `deploy/podman/.env.example` dibuat (sebelumnya tidak ada).
-- [x] `.gitignore`: tambah `.workbuddy-ai/memory`.
-- [x] `Makefile`: `docker compose` → `podman-compose`; target `migrate-up`/`migrate-down` diarahkan ke `bash server/scripts/migrate.sh`.
+| PR #24 (`59285ad`) | Structured logging `slog` + fix JWT middleware protected routes + switch MinIO + hapus redis provider duplikat `social` |
+| PR #25 (`119e4e2`) | Koreksi seluruh file `.md` (T-010) |
+| PR #26 (`e71bb1e`) | Fix image MinIO (`ghcr.io/coollabsio/minio`), Makefile kompatibel `cmd.exe`, **Step A** migrasi `0003` (`email_verified` + `deleted_at`), **Step B** extend `UserContract` jadi 6 method |
+| PR #27 (`b1f3f08`) | Fix `PasswordHash` di `GetUserByID` (T-019), **Step C** sambungkan 5 stub auth ke `userContract`, **Step D** aturan logging §5b + sanitasi substring + SHA-256 `HashToken` + index Redis SET per-user + `currentUserID()`/`maskToken()`, aturan reminder PR §12b |
+| PR #28 (`d350222`) | **Step E** 35 unit test & regresi (`platform/security`, `platform/logger`, `auth/internal/service` via `miniredis` + `testify`) + target `make test` & `make test-cover` |
 
 ---
 
-## 8b. 🔴 REALITAS vs DOKUMEN — BACA SEBELUM PERCAYA CHECKLIST
+## 8b. 🔴 REALITAS vs DOKUMEN — Audit Kode Terkini (24 Nov 2026)
 
-**`TODO.md` dan `PLAN.md` TIDAK BISA DIPERCAYA MENTAH.** Hasil audit 15 Okt 2026: beberapa item bertanda `[x]` ternyata **stub** (ada `// TODO:` di kodenya). **Selalu verifikasi ke kode**, jangan percaya checklist.
+**Selalu verifikasi ke kode aktual**, jangan percaya checklist lama. Auth Step A–E sudah tuntas, namun audit kode 24 Nov 2026 menemukan lubang & utang teknis nyata berikut:
 
-Lubang terkonfirmasi per 15 Okt 2026:
-
-| # | Temuan | Bukti |
-|---|---|---|
-| 1 | `auth/internal/repository/` **tidak ada** — persistensi auth 100% Redis inline di `service.go` | `find modules/auth` → tidak ada folder `repository` |
-| 2 | `auth/internal/migrations/` **tidak ada** — 3 tabel auth belum dibuat | idem |
-| 3 | Auth service punya **6 stub `// TODO:`** | `service.go` baris 210, 238, 284, 317, 351, 383 |
-| 4 | `VerifyEmail` — email **TIDAK** diupdate di DB | `// TODO: Add UpdateEmailVerified to userContract` |
-| 5 | `ResetPassword` + `ChangePassword` — password **TIDAK PERNAH berubah** | `// TODO: Add UpdatePassword to userContract` (2×) |
-| 6 | `DeleteAccount` — tidak soft-delete (hanya revoke token) | `// TODO: Call userContract.DeleteAccount or UpdateDeletedAt` |
-| 7 | Publish event email ke RabbitMQ — **tidak ada** | `// TODO: Publish event to RabbitMQ` (2×: forgot-password, resend-verification) |
-| 8 | Akar masalah: `userContract.UserContract` cuma **3 method** | `CreateUser`, `GetUserByEmail`, `GetUserByID` |
-| 9 | Skema `users` belum punya kolom `email_verified` & `deleted_at` | `0001_user_init.up.sql` |
-| 10 | `hashToken` = **XOR manual**, bukan SHA-256/bcrypt | `service.go` baris 453 |
-| 11 | `revokeAllUserTokens` = `SCAN refresh_token:*` **seluruh keyspace** → O(N) | `service.go` baris 423 |
-| 12 | `platform/messaging/` **tidak ada** — RabbitMQ/Kafka container jalan tapi belum dipakai kode Go | `ls internal/platform` → cuma `database, logger, redisx, security, validator` |
-| 13 | `platform/storage/` belum ada → belum ada integrasi object storage di Go | idem |
-| 14 | `server/internal/modules/*/contracts/` untuk `auth` & `reco` **BELUM ADA** | padahal `auth/contracts/` sudah ada sekarang (audit lama keliru) — lihat koreksi di bawah |
-
-> ⚠️ **Koreksi atas audit 20 Sep:** `auth` **sudah punya** `contracts/{errors.go, auth_contract.go}` (dibuat saat kerja logging 15 Okt). Yang masih benar-benar kosong: `reco`.
-
-**Rantai akar masalah** (perbaiki dari bawah ke atas, bukan dari atas):
-```
-skema users kurang kolom email_verified + deleted_at
-        ↓
-userContract cuma 3 method (tanpa UpdatePassword / UpdateEmailVerified / DeleteAccount)
-        ↓
-5 method auth jadi stub (VerifyEmail, ResetPassword, ChangePassword, DeleteAccount, publish event)
-```
+| # | Temuan Terkonfirmasi | Bukti di Kode | Prioritas |
+|---|---|---|---|
+| 1 | **JWT expiry 24 jam, bukan 15 menit** (mismatch dengan `accessExpiry` 15m di `auth/service.go:444` & ADR-007) | `server/internal/platform/security/jwt.go:29` (`24 * 1 * time.Hour`) | 🔴 **Hotfix sekarang** |
+| 2 | **IDOR pada `PATCH /api/v1/content/posts/:id`** — tidak cek `post.AuthorID != userID` | `content/internal/delivery/http/handler.go:95-123` | 🔴 **Hotfix sekarang** |
+| 3 | **8× unsafe type assertion `c.Get("user_id").(string)` tanpa `, ok`** → potensi panic 500 | `content/internal/delivery/http/handler.go` (baris 32, 58, 106, 128, 159, 176, 193, 210) | 🔴 **Hotfix sekarang** |
+| 4 | **Envelope `POST /api/v1/auth/register` flat** (`{token, user}`), sedangkan `Login`/`Refresh` wrapped `{"status":"success","data":...}` → Web `AuthFormCard.tsx:119` gagal simpan `fluids_token` saat register | `auth/internal/delivery/http/handler.go:131` vs `web/.../AuthFormCard.tsx:119` | 🔴 **Hotfix sekarang** |
+| 5 | **Healthcheck MinIO pakai `curl`** (tidak ada di image → false alarm `unhealthy`) | `deploy/podman/podman-compose.dev.yml:84` | 🔴 **Hotfix sekarang** |
+| 6 | **Endpoint profil user belum lengkap** — `user` baru punya `GET /me`; `App.tsx:115` memanggil `PUT /api/v1/users/profile` (404) & `platform/storage/` belum ada | `user/module.go:13-17`, `web/.../App.tsx:115` | 🟡 **Setelah Hotfix** |
+| 7 | **2 `TODO(step-f)` RabbitMQ + log `dev token` DEBUG** di `auth/service.go` (`platform/messaging/` belum ada) | `auth/internal/service/service.go:236-239, 317-320` | 🟡 **Step F** |
+| 8 | **Blacklist access token tidak ditegakkan** — `RevokeToken` menyimpan hash refresh token di `access_blacklist:`, dan `JWTMiddleWare` tidak mengeceknya | `auth/service.go:188`, `security/middleware.go` | 🟡 **Hardening lanjut** |
+| 9 | **Refresh token belum pakai HttpOnly cookie di `Login`/`Register`/`Refresh`** (hanya `Logout` yang baca/clear cookie) | `auth/internal/delivery/http/handler.go:115-224` | 🟡 **Hardening lanjut** |
+| 10 | **Logging drift di 5 modul non-`auth` + `UserIDMiddleware` tidak terpasang** (`LoggingMiddleware` juga menangkap `ctx` sebelum `next(c)`) | `logger/middleware.go:35,55`, `{user,content,social,notification,reco}/handler.go` | 🟡 **Bertahap per modul** |
+| 11 | **Duplikasi sentinel error `auth/service.go` vs `auth/contracts/errors.go`** + `auth` belum punya `repository/` & `migrations/` | `auth/service.go:53-67`, `auth/contracts/errors.go` | ⚪ **Utang arsitektur** |
+| 12 | **Coupling SQL lintas modul** (`social.sql:73` `UPDATE users`, `sqlc.yaml` share schema lintas modul) + `content` belum punya tabel `likes`/`comments` + N+1 di `ListFeed`/`GetFollowers` + `reco/handler.go:38` bocor `err.Error()` | `social.sql:71-82`, `content/service.go:167-240`, `reco/handler.go:38` | ⚪ **Utang arsitektur** |
+| 13 | **`shared/openapi/openapi.yaml` usang** (baru 2 path dengan skema lama) & `reco` belum punya `contracts/` | `shared/openapi/openapi.yaml` | ⚪ **Sesuai roadmap** |
 
 ---
 
-## 9. YANG BELUM DIKERJAKAN (roadmap)
+## 9. YANG BELUM DIKERJAKAN (roadmap — urut sesuai keputusan pemilik 24 Nov 2026)
 
-Urutan sesuai keputusan pemilik project:
-
-1. **Backend + Web dulu** (sedang berjalan) — prioritas saat ini: **selesaikan Auth** (lihat 8b, rantai akar masalah)
-2. **Mobile — Flutter** (belum ada folder `mobile/` di repo)
-3. **ML — Two-Tower recsys** di `ml/` (FastAPI + PyTorch). `pyproject.toml` + `uv.lock` sudah ada, tinggal `uv sync`. Butuh `uv` yang belum terpasang. PyTorch ~2–3 GB.
-
-Fitur yang direncanakan **setelah** pondasi backend selesai (detail di `PLAN.md`):
-- **GraphQL gateway** — untuk **Web saja**, bukan mobile.
-- **gRPC internal** — untuk `reco`, `chat`, `notification` (Go ↔ Python ↔ Dart).
-- **WebSocket hub** + **Webhook** (keluar) untuk integrasi pihak ketiga.
-- **Message broker**: RabbitMQ (task queue) + Kafka (event log/analytics) — container sudah jalan, kode belum.
-- **Observability**: OpenTelemetry (traceID) + Grafana Alloy → Loki (logs) + Tempo (traces) + Prometheus (metrics) + Grafana dashboard.
-- **Upgrade slog → centralized logging** (ship JSON log ke Loki).
-
-Catatan teknis yang masih menggantung:
-- Kafka & RabbitMQ container sudah jalan, tapi **belum dipakai** di kode Go (backend baru pakai Postgres + Redis).
-- Modul `reco` sudah ada route `/api/v1/reco/explore`, tapi belum ada model ML-nya.
-- `reco` belum punya `contracts/` (belum di-consume modul lain).
-- `web/package.json` masih pin `pnpm@9.0.0` (agak usang).
+1. **Hotfix Keamanan & Kontrak** *(sedang menjadi prioritas #1)*: JWT 15m, IDOR `UpdatePostCaption` + safe `user_id` di `content`, envelope `Register`, healthcheck MinIO.
+2. **User Profile Endpoints + MinIO (`platform/storage/`)**: `GET /users/:username`, `PATCH /me` (selaraskan dengan `App.tsx`), `POST /me/avatar`, rapikan logging `user` §5b, unit test.
+3. **Step F — RabbitMQ (`platform/messaging/`) + Email Worker**: topology idempotent, publisher/consumer (retry 3× + DLQ), sambungkan 2 `TODO(step-f)` di `auth` + welcome email, hapus `dev token` DEBUG.
+4. **OpenAPI sync (`shared/openapi/`)** → generate TS client → integrasi frontend penuh.
+5. **`reco/contracts/` + ML Two-Tower (`ml/`)** (FastAPI + PyTorch; `pyproject.toml` + `uv.lock` sudah ada).
+6. **gRPC internal** (`shared/proto/`, `reco`, `chat`, `notification`), **GraphQL gateway** (**Web saja**, bukan mobile), **WebSocket hub** (`stories`, `notification`), **Webhook** outbound.
+7. **Observability**: OpenTelemetry → Grafana Alloy → Loki (upgrade `slog`) + Tempo + Prometheus + Grafana dashboard.
+8. **Mobile Flutter (`mobile/`)** & **Kafka event log** (`user.actions`, `embedding.updates`, `audit.log`).
 
 ---
 
 ## 10. Jebakan yang sudah terkonfirmasi — baca sebelum debug
 
-1. **pnpm version mismatch.** Mesin punya pnpm 12.4.1 global, tapi repo pin `pnpm@9.0.0`. Fitur auto-switch pnpm **gagal** dengan error `did not materialize in the global virtual store`. **Solusi: selalu `npx -y pnpm@9.0.0 <cmd>`** di folder `web/`.
-2. **`make` tidak terpasang** di Windows (juga tidak ada `mingw32-make`/`gmake`). Makefile tidak bisa dipakai langsung — jalankan perintah mentahnya, atau install GNU Make.
-3. **Vite bind ke IPv6 `::1` saja.** `curl http://127.0.0.1:3000` GAGAL, `http://localhost:3000` SUKSES. Di browser selalu pakai `localhost`.
-4. **Proses orphan.** `go run` dan `npx pnpm dev` meninggalkan proses anak kalau parent di-kill, sehingga port tetap terpakai. Bersihkan: `netstat -ano | findstr :3000` lalu `taskkill /PID <pid> /F`.
-5. **`podman-compose` membaca `.env` dari folder file compose** (`deploy/podman/`), bukan dari root repo.
-6. **CLI `migrate` wajib ada di PATH** untuk `server/scripts/migrate.sh`. Terpasang di `C:\Users\ferin\go\bin`.
-7. **File `.env` tidak ada di repo** (gitignored). Kalau environment baru, wajib copy dari `.env.example` — kalau tidak, Go akan error `missing required database environment variables`.
-8. **`server/tmp/`** dipakai air untuk binary hasil build. Jangan diedit.
-9. **Banyak file Go belum rapi formatnya — tapi hati-hati saat merapikan.** Hasil audit 20 Sep 2026:
-   - `gofmt -l` menandai **53 file**
-   - **17 file** ditandai hanya karena line ending CRLF — git **tidak melihat perubahan apa pun** di sini, karena repo ini `core.autocrlf=true` (CRLF di working tree itu **normal**, bukan bug)
-   - **36 file** punya masalah format **asli** (alignment blok `var`, trailing newline di akhir file, dll)
-
-   ⚠️ **JANGAN jalankan `gofmt -w .` di seluruh folder `server/`.** Itu akan mengubah 36 file sekaligus dan membuat diff PR-mu kacau serta mustahil di-review.
-   Format **hanya file yang kamu sentuh**, dan bicarakan dulu dengan tim kalau mau normalisasi seluruh repo.
+1. **pnpm version mismatch.** Mesin punya pnpm 12.x global, tapi repo pin `pnpm@9.0.0`. Fitur auto-switch pnpm **gagal** (`did not materialize in the global virtual store`). **Solusi: selalu `npx -y pnpm@9.0.0 <cmd>`** di folder `web/`.
+2. **GNU Make di Windows memakai `cmd.exe`, bukan bash.** GNU Make 3.81 sudah terpasang di `C:\Program Files (x86)\GnuWin32\bin` (masuk PATH). Karena pakai `cmd.exe`, **dilarang** menaruh `2>/dev/null`, `grep`/`awk`/`sed`, atau `sleep` di `Makefile` (lihat `TASK_LOG.md` T-014).
+3. **`podman-compose` 1.3.0 di Debian 13** punya bug path relatif → jalankan dari `deploy/podman/` atau pakai absolute path `-f "$PWD/deploy/podman/podman-compose.dev.yml"`.
+4. **Vite bind ke IPv6 `::1` saja.** `curl http://127.0.0.1:3000` GAGAL, `http://localhost:3000` SUKSES. Di browser selalu pakai `localhost`.
+5. **Proses orphan (Windows).** `go run` dan `npx pnpm dev` meninggalkan proses anak kalau parent di-kill, sehingga port tetap terpakai. Bersihkan: `netstat -ano | findstr :3000` lalu `taskkill /PID <pid> /F`.
+6. **`podman-compose` membaca `.env` dari folder file compose** (`deploy/podman/`), bukan dari root repo.
+7. **CLI `migrate` wajib ada di PATH** untuk `server/scripts/migrate.sh` (Windows: `C:\Users\ferin\go\bin`; Debian: `~/go/bin/`).
+8. **File `.env` tidak ada di repo** (gitignored). Kalau environment baru, wajib copy dari `.env.example` — kalau tidak, Go akan error `missing required database environment variables`. Jalankan `air` dari folder `server/` karena `godotenv.Load()` baca `.env` dari CWD.
+9. **`server/tmp/`** dipakai air untuk binary hasil build. Jangan diedit.
+10. **Banyak file Go belum rapi formatnya — tapi hati-hati saat merapikan.** `gofmt -l` menandai puluhan file (sebagian hanya karena CRLF Windows, sebagian masalah format asli).
+    ⚠️ **JANGAN jalankan `gofmt -w .` di seluruh folder `server/`.** Format **hanya file yang kamu sentuh** supaya diff PR bersih dan mudah direview.
 
 ---
 
 ## 11. Aturan kerja untuk AI agent
 
-> ⚠️ Baca juga **bagian 0** — pemilik project mengetik & menjalankan kodenya sendiri. AI bertindak sebagai mentor, bukan eksekutor.
+> ⚠️ Baca juga **bagian 0** & **`aturanFluidsAi.md`** — pemilik project mengetik & menjalankan seluruh kode dan terminal sendiri.
 
-1. **Jangan edit kode project secara otonom.** Berikan kode + langkah + penjelasan singkat; pemilik yang mengetik & menjalankan. (File `.md` boleh dikoreksi bila diminta.)
-2. Kerjakan semua perubahan di branch **`dev-zacky`**. Jangan commit/push ke `dev`, `staging`, `main`.
-3. **Jangan pernah** commit file `.env` atau kredensial apa pun.
-4. **Jangan edit manual** file di `repository/gen/` — itu hasil generate `sqlc`. Ubah `queries/*.sql` lalu regenerate.
-5. **Jangan `git add .`** — selalu `git add <file>` per file. Pernah terjadi file pribadi (`podman-error.txt` berisi hash & stack trace) nyaris ikut ter-commit.
-6. Sebelum menyatakan selesai: jalankan `go build ./...` di `server/`, dan `npx -y pnpm@9.0.0 run build` di `web/`.
-7. Untuk komponen UI, **wajib** ikut `.agents/rules/design-tokens.md`. **Desain `/web` sudah final — jangan redesign.**
-8. Jangan hapus folder `.workbuddy-ai/` (berisi catatan kerja).
-9. Jangan ubah port yang sudah ditentukan (5436 untuk Postgres, 3000 web, 8080 API).
-10. Kalau butuh mengubah skema DB: bikin file migrasi baru di `internal/migrations` modul terkait — jangan ubah file migrasi yang sudah pernah dijalankan.
-11. **Format Go:** setelah selesai mengedit, jalankan `gofmt -w` **hanya pada file yang kamu ubah** — jangan pernah `gofmt -w .` di seluruh folder (lihat jebakan #9 di bagian 10).
-12. **Kalau bikin modul baru**, wajib ikut struktur di bagian 4: `contracts/{errors.go, <nama>_contract.go}` + `internal/{delivery/http, service, repository, migrations}` + `module.go`, lalu daftarkan modulnya di `server/cmd/api/main.go`.
-13. **Sebelum mengecek pelanggaran arsitektur**, baca dulu bagian 4. Import yang diizinkan lintas modul **hanya** ke `contracts/`.
-14. **Jangan percaya checklist `TODO.md`/`PLAN.md`** — verifikasi ke kode dulu (lihat bagian 8b).
-15. **Logging wajib ikut bagian 5b.** Ringkasnya: log error **sekali** di handler, service hanya log **event**, `4xx` = `WARN` bukan `ERROR`, dan nilai sensitif wajib lewat `SanitizeArgs`. Sebelum menambah `logger.ErrorCtx` di service, tanya dulu: *"apakah error ini di-return?"* Kalau ya — **jangan** di-log di situ.
-16. **Setelah setiap `git push` → WAJIB ingatkan PR** beserta **judul** dan **body**-nya (bagian 12b). Jangan tutup respons dengan "selesai" tanpa menyebut PR. Push belum selesai sampai PR dibuat.
+1. **Jangan edit kode project secara otonom** (`server/`, `web/`, `ml/`, `deploy/`, `Makefile`, `shared/`). Berikan kode + langkah + penjelasan singkat; pemilik yang mengetik & menjalankan. **Pengecualian resmi:** file dokumentasi `.md` **boleh & wajib** diedit langsung oleh AI setelah task diverifikasi agar tidak stale saat pindah AI/OS.
+2. **Jangan jalankan perintah terminal atas nama pemilik.** Tulis perintahnya, pemilik yang jalankan dan tempel output-nya.
+3. Kerjakan semua perubahan di branch **`dev-zacky`**. Jangan commit/push langsung ke `dev` atau `main`.
+4. **Jangan pernah** commit file `.env` atau kredensial apa pun.
+5. **Jangan edit manual** file di `repository/gen/` — itu hasil generate `sqlc`. Ubah `queries/*.sql` lalu regenerate.
+6. **Jangan `git add .`** — selalu `git add <file>` per file. Pernah terjadi file pribadi (`podman-error.txt`) nyaris ikut ter-commit.
+7. Sebelum menyatakan selesai: minta pemilik jalankan `go build ./...` + `go test ./... -count=1` di `server/`, dan `npx -y pnpm@9.0.0 run build` di `web/` bila menyentuh frontend.
+8. Untuk komponen UI, **wajib** ikut `.agents/rules/design-tokens.md`. **Desain `/web` sudah final — jangan redesign.**
+9. Jangan hapus folder `.workbuddy-ai/` (berisi catatan kerja).
+10. Jangan ubah port yang sudah ditentukan (5436 untuk Postgres, 3000 web, 8080 API).
+11. Kalau butuh mengubah skema DB: bikin file migrasi baru di `internal/migrations` modul terkait — jangan ubah file migrasi yang sudah pernah dijalankan.
+12. **Format Go:** setelah selesai mengedit, arahkan `gofmt -w` **hanya pada file yang diubah** — jangan pernah `gofmt -w .` di seluruh folder.
+13. **Kalau bikin modul baru**, wajib ikut struktur di bagian 4: `contracts/{errors.go, <nama>_contract.go}` + `internal/{delivery/http, service, repository, migrations}` + `module.go`, lalu daftarkan modulnya di `server/cmd/api/main.go`.
+14. **Sebelum mengecek pelanggaran arsitektur**, baca dulu bagian 4. Import Go yang diizinkan lintas modul **hanya** ke `contracts/`.
+15. **Jangan percaya checklist `TODO.md`/`PLAN.md`** — verifikasi ke kode dulu.
+16. **Logging wajib ikut bagian 5b.** Ringkasnya: log error **sekali** di handler, service hanya log **event**, `4xx` = `WARN` bukan `ERROR`, dan nilai sensitif wajib lewat `SanitizeArgs`.
+17. **Setelah setiap `git push` → WAJIB ingatkan PR** beserta **judul** dan **body**-nya (bagian 12b). Jangan tutup respons dengan "selesai" tanpa menyebut PR. Push belum selesai sampai PR dibuat.
 
 ---
 
 ## 12. Konvensi commit & alur PR
 
-Setiap task selesai → **pandu pemilik project** untuk menempuh alur ini (jangan skip):
+Setiap task selesai → **review kode → sync `.md` → pandu pemilik project** menempuh alur ini (jangan skip):
 
 ```bash
 # 1. Pastikan di branch dev-zacky & lihat apa yang berubah
@@ -587,9 +553,8 @@ git status --short
 git diff
 
 # 2. Commit PER LOGICAL UNIT (jangan git add .)
-git add server/internal/modules/user/internal/migrations/0003_add_email_verified_deleted_at.up.sql
-git add server/internal/modules/user/internal/migrations/0003_add_email_verified_deleted_at.down.sql
-git commit -m "feat(user): add email_verified & deleted_at columns"
+git add <file-yang-berubah>
+git commit -m "fix(security): set JWT access token expiry to 15 minutes"
 
 # 3. Push ke dev-zacky
 git push origin dev-zacky
@@ -598,12 +563,13 @@ git push origin dev-zacky
 gh pr create --base dev --head dev-zacky --title "..." --body "..."
 ```
 
-**Format commit (Conventional Commits):** `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `perf:`. Pakai scope modul kalau relevan, contoh `fix(auth): ...`, `chore(infra): ...`.
+**Format commit (Conventional Commits):** `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `perf:`. Pakai scope modul kalau relevan, contoh `fix(auth): ...`, `fix(content): ...`, `chore(infra): ...`.
 
 **Aturan PR:**
-- Base = `dev`, head = `dev-zacky`. **Jangan pernah** PR langsung ke `staging`/`main`.
+- Harian: Base = `dev`, head = `dev-zacky`. **Jangan pernah** PR dari `dev-zacky` langsung ke `main`.
+- Milestone stabil: Base = `main`, head = `dev`.
 - Satu PR = satu concern. Jangan campur migrasi + refactor + docs dalam satu PR besar.
-- Setelah PR merged, `git checkout dev && git pull && git checkout dev-zacky && git merge dev` (biar branch kerja tetap sinkron).
+- Setelah PR merged ke `dev`: `git checkout dev && git pull --ff-only origin dev && git checkout dev-zacky && git merge dev && git push origin dev-zacky` (biar branch kerja tetap sinkron di Windows maupun Debian).
 
 ---
 

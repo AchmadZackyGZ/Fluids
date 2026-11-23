@@ -17,19 +17,21 @@ Rujuk file tersebut sebagai **satu-satunya sumber kebenaran** (*single source of
 
 | File | Isi |
 |---|---|
-| `AGENTS.md` | Konteks lengkap: alur branch, stack, struktur modul, konvensi, jebakan, **status pekerjaan terkini** |
+| `aturanFluidsAi.md` | Peran mentor, aturan keras, workflow dual-boot Windows ↔ Debian, prioritas terkini |
+| `AGENTS.md` | Konteks lengkap: alur branch, stack, struktur modul, konvensi, logging §5b, jebakan, PR §12b |
 | `PLAN.md` | Keputusan arsitektur + roadmap (ADR style) |
 | `ARCHITECTURE_DOCUMENTATION.md` | Referensi teknis detail arsitektur aktual |
-| `TODO.md` | Status task per-minggu (ke depan) |
+| `TODO.md` | Status task & sprint focus (ke depan) |
 | `TASK_LOG.md` | Riwayat task yang **sudah selesai** + protokol review/commit |
 
-**Urutan baca yang disarankan:** `AGENTS.md` → `PLAN.md` → `ARCHITECTURE_DOCUMENTATION.md` → `TODO.md` → `TASK_LOG.md`.
+**Urutan baca yang disarankan:** `aturanFluidsAi.md` → `AGENTS.md` → `TASK_LOG.md` → `TODO.md` → `PLAN.md` → `ARCHITECTURE_DOCUMENTATION.md`.
 
 ## 3. Aturan wajib (ringkas)
 
-1. Kerjakan semua perubahan di branch **`dev-zacky`**, naik ke `dev` → `staging` → `main` **hanya lewat Pull Request**.
+1. Kerjakan semua perubahan di branch **`dev-zacky`**, naik ke `dev` → `main` **hanya lewat Pull Request** (`staging` belum dipakai di fase lokal).
 2. Komunikasi antar modul backend **hanya lewat `contracts/`** (`errors.go` + `<nama>_contract.go`). Dilarang import `internal/` modul lain.
 3. Jangan pernah commit `.env` atau kredensial.
 4. Jangan hapus folder `.workbuddy-ai/`.
+5. Kode & perintah terminal dijalankan pemilik project; file `.md` boleh & wajib disinkronkan langsung oleh AI setelah task diverifikasi.
 
 Detail lengkap ada di `AGENTS.md` bagian 4, 5, dan 11.
